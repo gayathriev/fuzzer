@@ -6,8 +6,9 @@ def open_process_csv():
         p = process("./" + sys.argv[1])
         context.log_level = 'debug'
         return p
-    except:
+    except Exception as e:
         print("invalid binary :(")
+        print(e)
         sys.exit() 
 
 def parse_csv_input():
