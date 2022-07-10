@@ -3,6 +3,7 @@ import os
 from pwn import *
 
 import xml.etree.ElementTree as ET # Here for testing - will move to XML_fuzz
+from json_fuzzer import json_fuzzer
 
 BINARY_FOLDER = "binaries/"
 
@@ -35,13 +36,18 @@ Execute fuzzer for specific data type:
 '''
 with open(sample) as file:
     # If JSON, do JSON_fuzz else
-    
+    try:
+        json_fuzzer(binary, sample)
+    except Exception as e:
+        print("=== JSON PANIKK ===")
+        print(e)
+        pass   
     # If XML, do XML_fuzz else
     try:
-    	file.seek(0)
-    	xmlObj = ET.parse(file)
+        file.seek(0)
+        xmlObj = ET.parse(file)
     except Exception as e:
-    	pass # head to next case (CSV)
+        pass # head to next case (CSV)
     # do XML_Fuzz
     
     # If CSV, do CSV_fuzz else
