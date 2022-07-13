@@ -65,7 +65,7 @@ def generate_input(xml):
     print("----------------------")
     for parent in xml:
         for child in xml:
-            yield ET.tostring(span_child(child, xml)).decode()
+            yield ET.tostring(breed_child(child, parent, xml)).decode()
 
     # Link overflow
 
