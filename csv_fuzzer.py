@@ -44,14 +44,16 @@ def parse_csv_input():
 
     return data
 
-"""gdb.attach('image-viewer','''
-set follow-fork-mode child
-break execve
-continue
-''')"""
+# send the header of the csv file as one line.
+def send_header(process,data):
+    payload = ""
+    for entry in data[0]:
+        payload += entry
+        payload += ','
+    process.sendline(payload[:-1])
 
 def empty_payload(process, data):
-    delimiter = len(data)-2
+    delimiter = len(data[0])
     if(delimiter < 0):
         delimiter = 0
 
@@ -64,7 +66,7 @@ def empty_payload(process, data):
         print(i)
 
 def zero_payload(process, data):
-    delimiter = len(data)-1
+    delimiter = len(data[0])
     if(delimiter < 0):
         delimiter = 0
 
@@ -74,6 +76,8 @@ def zero_payload(process, data):
     string = b'0,' * delimiter
     string = string[:-1]
 
+    send_header(process,data)
+
     while 1==1:
 
         process.sendline(string)
@@ -81,7 +85,7 @@ def zero_payload(process, data):
         print(i)
 
 def negative_payload(process, data):
-    delimiter = len(data)-1
+    delimiter = len(data[0])
     if(delimiter < 0):
         delimiter = 0
 
@@ -97,10 +101,32 @@ def negative_payload(process, data):
         i+=1
         print(i)
 
+
+def large_payload(process, data, size):
+    delimiter = len(data[0])
+    if(delimiter < 0):
+        delimiter = 0
+
+    print("delimiter is " + str(delimiter))
+    i = 0
+
+    string = b'a'*size + b','
+    string *= delimiter
+    string = string[:-1]
+
+    while 1==1:
+
+        process.sendline(string)
+        i+=1
+        print(i)
+
+
+
 #TODO: add detection of when the program is just running and not resolving
 
 p = open_process_csv()
 data = parse_csv_input()
 print(data)
 
+zero_payload(p,data)
 p.interactive()
