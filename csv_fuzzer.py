@@ -1,5 +1,20 @@
 from pwn import *
 import csv
+from enum import Enum
+
+class Payload(Enum):
+    EMPTY = 1
+    INVALID = 2
+    OVERFLOW_LINE = 3
+    OVERFLOW_ENTRY = 4
+    DELIMITER = 5
+    FORMAT_STRING = 6
+    BYTE_FLIP = 7
+    NUM_ZERO = 8
+    NUM_NEGATIVE = 9
+    NUM_LARGE = 10
+    NUM_FLOAT = 11
+
 
 def open_process_csv():
     try:
@@ -35,9 +50,57 @@ break execve
 continue
 ''')"""
 
+def empty_payload(process, data):
+    delimiter = len(data)-2
+    if(delimiter < 0):
+        delimiter = 0
+
+    print("delimiter is " + str(delimiter))
+    i = 0
+
+    while 1==1:
+        process.sendline(b','*delimiter)
+        i+=1
+        print(i)
+
+def zero_payload(process, data):
+    delimiter = len(data)-1
+    if(delimiter < 0):
+        delimiter = 0
+
+    print("delimiter is " + str(delimiter))
+    i = 0
+
+    string = b'0,' * delimiter
+    string = string[:-1]
+
+    while 1==1:
+
+        process.sendline(string)
+        i+=1
+        print(i)
+
+def negative_payload(process, data):
+    delimiter = len(data)-1
+    if(delimiter < 0):
+        delimiter = 0
+
+    print("delimiter is " + str(delimiter))
+    i = 0
+
+    string = b'-1,' * delimiter
+    string = string[:-1]
+
+    while 1==1:
+
+        process.sendline(string)
+        i+=1
+        print(i)
+
+#TODO: add detection of when the program is just running and not resolving
+
 p = open_process_csv()
 data = parse_csv_input()
-
 print(data)
 
 p.interactive()
