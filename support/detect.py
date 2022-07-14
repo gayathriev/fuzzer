@@ -1,4 +1,5 @@
 import magic, csv, json, xml, string
+import xml.etree.ElementTree as ET
 
 '''
 
@@ -6,8 +7,6 @@ Module detects what type of file is fed into the fuzzer
 Depends on input file in given as the arguments with the script
 
 '''
-
-
 def detect(file):
 
     # Try for JPG
@@ -38,8 +37,10 @@ def detect(file):
 
     # Try for XML
     try:
-        data = xml.dom.minidom.parse(file)
-        return "xml"
+        with open(file) as xmlfile:
+            xmlfile.seek(0)
+            xmlObj = ET.parse(file)
+            return "xml"
     except:
         pass
     
