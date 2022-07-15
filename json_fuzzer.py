@@ -70,9 +70,11 @@ def format_string(size):
 #################################
 def test_payload(binary_file, json):
     p = process('./' + binary_file)
+    context.log_level = 'error'
     print(json)
     p.sendline(str(json).encode())
-    mess = p.recvlines(2, timeout=0.1)
+    p.proc.stdin.close()
+    mess = p.recvline(timeout=0.1)
     print(mess)
     p.close()
 
