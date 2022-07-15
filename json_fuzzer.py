@@ -92,8 +92,9 @@ def test_payload(binary_file, res):
     while exit_status == None:
         p.wait()
         exit_status = p.returncode
-    print("exit status:", exit_status)
-    mess = p.recvline()
+    print("exit status:", exit_status, "-- segfault" if exit_status == -11 else '')
+
+    mess = p.recvline(timeout = 0.1)
     print('len: ', res['len'], 'input len: ', len(res['input']), mess)
     p.close()
 
@@ -114,7 +115,6 @@ def json_fuzzer(binary_file, input, loops=100):
             print('===', res['len'], '===', len(res['input']))
             test_payload(binary_file, res)
         except Exception as e:
-            print('exception')
             print(e)
     
 
