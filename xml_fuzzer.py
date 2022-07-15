@@ -8,10 +8,10 @@ import xml.etree.ElementTree as ET
 
 from pwn import *
 
-MAX_BUF = 0x100
+MAX_BUF = 0x999
 
 def tree_to_string(tree):
-    return ET.tostring(tree).decode()
+    return ET.tostring(tree)
 
 def read_xml(filename):
     f = open(filename)
@@ -53,7 +53,7 @@ def inject_overflow(xml):
 def inject_fstring(xml):
     root = copy.deepcopy(xml)
     for c in root.iter('a'):
-        c.set("href", "https://" + "%s" * MAX_BUF + ".com")
+        c.set("href", "https://" + "%s" * 0x500 + ".com")
     return root
 
 #################################
@@ -61,50 +61,54 @@ def inject_fstring(xml):
 #################################
 def test_payload(binary_file, xml):
     p = process('./' + binary_file)
-    payload = bytes(xml, 'utf-8')
-    # Hardcoded fread exit, fread not terminating otherwise
-    payload += b'A' * (0x270e - len(payload))
+    payload = xml
     p.send(payload)
+    p.proc.stdin.close()
     mess = p.recvlines(2, timeout=0.2)
-    print(mess)
     p.close()
+    print(mess)
 
 def generate_input(xml):
     # Empty input
     print("empty")
     print("----------------------")
-    yield ""
+    yield b''
 
     # Original input
     print("original")
     print("----------------------")
     input = tree_to_string(xml)
-    print(input)
     yield input
 
     # Add child to parent rand times
     print("breadthwise add")
     print("----------------------")
     for child in xml:
-        yield ET.tostring(span_child(child, xml)).decode()
+        mutated = span_child(child, xml)
+        input = tree_to_string(mutated)
+        yield input
 
     # Recursively add random child to itself rand times
     print("depthwise add")
     print("----------------------")
     for parent in xml:
         for child in xml:
-            yield ET.tostring(breed_child(child, parent, xml)).decode()
+            mutated = breed_child(child, parent, xml)
+            input = tree_to_string(mutated)
+            yield input
 
     # Inject fstring
     print("inject fstring")
     print("----------------------")
-    input = tree_to_string(inject_fstring(xml))
+    mutated = inject_fstring(xml)
+    input = tree_to_string(mutated)
     yield input
 
     # Overflow link
     print("overflow link")
     print("----------------------")
-    input = tree_to_string(inject_overflow(xml))
+    mutated = inject_overflow(xml)
+    input = tree_to_string(mutated)
     yield input
 
     # Content int overflow (2 ** 31)
