@@ -88,7 +88,12 @@ def test_payload(binary_file, res):
     p.sendline(json.dumps(res).encode())
     p.proc.stdin.close()
 
-    mess = p.recvline(timeout=0.1)
+    exit_status = None
+    while exit_status == None:
+        p.wait()
+        exit_status = p.returncode
+    print("exit status:", exit_status)
+    mess = p.recvline()
     print('len: ', res['len'], 'input len: ', len(res['input']), mess)
     p.close()
 
@@ -101,7 +106,6 @@ def json_fuzzer(binary_file, input, loops=100):
 
     for i in range(0, LOOPS):
         try:
-    
             res = mutate(json)
             print('===', res['len'], '===', len(res['input']))
             test_payload(binary_file, res)
