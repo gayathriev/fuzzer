@@ -4,7 +4,7 @@ import os
 import json
 import copy
 import random
-from support.log_crash import log_crash
+from support.log_crash import log_crash_json
 
 LOOPS = 100
 
@@ -93,10 +93,10 @@ def test_payload(binary_file, res):
     while exit_status == None:
         p.wait()
         exit_status = p.returncode
-    # print("exit status:", exit_status, "-- segfault" if exit_status == -11 else 'REEEEEE')
+    #print("exit status:", exit_status, "-- segfault" if exit_status == -11 else 'REEEEEE')
     if (exit_status == -11):
         print("Program terminated: Check 'bad.txt' for output")
-        log_crash(res)
+        log_crash_json(res)
         exit(0)
 
     mess = p.recvline(timeout = 0.1)
