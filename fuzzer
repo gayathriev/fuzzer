@@ -4,6 +4,8 @@ from support.detect import detect
 from pwn import *
 # from Harness import Harness
 from modes.json_fuzzer import json_fuzzer
+from modes.xml_fuzzer import xml_fuzzer
+
 
 BINARY_FOLDER = "binaries/"
 SEGFUALT_SIGNAL = -11
@@ -49,7 +51,8 @@ def run_fuzzer():
     # else if (mode_type == 'csv'):
     #     # calls csv_fuzzer
 
-    # if (mode_type == 'xml'):
-    #     # calls xml_fuzzer
+    if (mode_type == 'xml'):
+        # calls xml_fuzzer
+        xml_fuzzer(binary_file, input_file)
 
 run_fuzzer()
