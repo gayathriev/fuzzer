@@ -14,9 +14,9 @@ if len(sys.argv) != 3:
     sys.exit("Usage: python3 fuzzer.py [binaryName] [sampleInput]")
 
 binary_file = sys.argv[1]
-print("Binary: " + binary_file)
+# print("Binary: " + binary_file)
 input_file = sys.argv[2]
-print("Input File: " + input_file)
+# print("Input File: " + input_file)
 
 # binary = BINARY_FOLDER + binary_file
 # if not (os.path.isfile(binary)):
@@ -39,7 +39,6 @@ Execute fuzzer for specific data type:
 '''
 
 mode_type = detect(input_file)
-print(mode_type)
 # make instance of fuzzer from detected mode
 
 def run_fuzzer():
@@ -51,8 +50,11 @@ def run_fuzzer():
     # else if (mode_type == 'csv'):
     #     # calls csv_fuzzer
 
-    if (mode_type == 'xml'):
+    elif (mode_type == 'xml'):
         # calls xml_fuzzer
         xml_fuzzer(binary_file, input_file)
+
+    else:
+        print("File format not supported yet.")
 
 run_fuzzer()
