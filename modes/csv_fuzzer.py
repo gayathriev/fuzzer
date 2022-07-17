@@ -1,6 +1,7 @@
 from pwn import *
 import csv
 from enum import Enum
+from support.log_crash import log_crash
 
 class Payload(Enum):
     EMPTY = 1
@@ -71,14 +72,19 @@ def test_payload(process, payload):
     p = open_process_csv(process)
 
     run = 0
-
+    total = ''
     while run <= 5000:
         try:
             p.sendline(payload)
             run+=1
+            total += str(payload)
         except:
             p.wait_for_close()
             return_tuple = (run, p.returncode)
+            if (p.returncode == -11):
+                print("Program terminated: Check 'crash.txt' for output")
+                log_crash(total)
+                exit(0)
             return return_tuple
             break;
 
@@ -188,22 +194,22 @@ def large_payload(process, data, size, send_header):
 
 """
 
-def csv_payload(process,data):
-    data = parse_csv_input(sys.argv[2])
+def csv_fuzzer(process,file):
+    data = parse_csv_input(file)
 
-    runs = empty_payload(sys.argv[1],data,True)
+    runs = empty_payload(process,data,True)
     print("runs required for empty payload: " + str(runs[0]))
     print("return code for this run was: " + str(runs[1]))
 
-    runs = zero_payload(sys.argv[1],data,True)
+    runs = zero_payload(process,data,True)
     print("runs required for zero payload: " + str(runs[0]))
     print("return code for this run was: " + str(runs[1]))
 
-    runs = negative_payload(sys.argv[1],data,True)
+    runs = negative_payload(process,data,True)
     print("runs required for negative payload: " + str(runs[0]))
     print("return code for this run was: " + str(runs[1]))
 
-    runs = large_payload(sys.argv[1],data,100,True)
+    runs = large_payload(process,data,100,True)
     print("runs required for large payload: " + str(runs[0]))
     print("return code for this run was: " + str(runs[1]))
 
