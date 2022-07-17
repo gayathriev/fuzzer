@@ -38,20 +38,14 @@ def parse_csv_input(path):
 
     data = []
     try:
-        print("this is a list?")
-        print(path)
         with open(path, newline='') as csv_file:
-            print(csv_file)
             csv_reader = csv.reader(csv_file, delimiter=',')
             for row in csv_reader:
-                print(len(row))
                 data.append(row)
     except Exception as e:
         print("invalid data :(")
         print(e)
         sys.exit() 
-    print("this is the data extracted:")
-    print(data)
     return data
 
 # Given a processed csv 2d array, will grab the header i.e. the first line and return it.
@@ -212,6 +206,3 @@ def csv_fuzzer(process,file):
     runs = large_payload(process,data,100,True)
     print("runs required for large payload: " + str(runs[0]))
     print("return code for this run was: " + str(runs[1]))
-
-
-
