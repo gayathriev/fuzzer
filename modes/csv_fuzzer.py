@@ -76,7 +76,7 @@ def test_payload(process, payload):
             p.wait_for_close()
             return_tuple = (run, p.returncode)
             if (p.returncode == -11):
-                print("Program terminated: Check 'crash.txt' for output")
+                print("Program terminated: Check 'bad.txt' for output")
                 log_crash(total)
                 exit(0)
             return return_tuple

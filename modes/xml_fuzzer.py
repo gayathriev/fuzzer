@@ -72,7 +72,7 @@ def test_payload(binary_file, xml):
         exit_status = p.returncode
     # print("exit status:", exit_status, "-- segfault" if exit_status == -11 else 'REEEEEE')
     if (exit_status == -11):
-        print("Program terminated: Check 'crash.txt' for output")
+        print("Program terminated: Check 'bad.txt' for output")
         log_crash(payload)
         exit(0)
     
