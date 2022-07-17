@@ -9,5 +9,5 @@ def log_crash(crash_input):
     str_input = str(crash_input)
     crash_message += str_input
     crash_message += '\n'
-    with open('./crash.txt', 'w') as crash:
+    with open('./bad.txt', 'w') as crash:
         crash.write(crash_message)
