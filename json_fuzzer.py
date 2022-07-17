@@ -92,7 +92,7 @@ def test_payload(binary_file, res):
     while exit_status == None:
         p.wait()
         exit_status = p.returncode
-    print("exit status:", exit_status, "-- segfault" if exit_status == -11 else 'REEEEEE')
+    print("exit status:", exit_status, "-- segfault" if exit_status == -11 else '')
 
     mess = p.recvline(timeout = 0.1)
     print('len: ', res['len'], 'input len: ', len(res['input']), mess)
