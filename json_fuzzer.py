@@ -1,211 +1,119 @@
 from pwn import *
-import csv
-from enum import Enum
+import sys
+import os
+import json
+import copy
+import random
 
-class Payload(Enum):
-    EMPTY = 1
-    INVALID = 2
-    OVERFLOW_LINE = 3
-    OVERFLOW_ENTRY = 4
-    DELIMITER = 5
-    FORMAT_STRING = 6
-    BYTE_FLIP = 7
-    NUM_ZERO = 8
-    NUM_NEGATIVE = 9
-    NUM_LARGE = 10
-    NUM_FLOAT = 11 
+LOOPS = 100
+
+def read_json(filename):
+    f = open(filename)
+    return json.load(f)
 
 
-"""
+def mutate(json):
+    res = copy.deepcopy(json)
+    key = random.choice([res.keys()])
+    random_numbers = generate_random_numbers(res['len'])
+    for key in res.keys():
+        if isinstance(res[key], int):
+            res[key] = random.choice(random_numbers)
+        if isinstance(res[key], str):
+            res[key] = mutate_string(res[key])
+        if isinstance(res[key], list):
+            index = random.randint(0, len(res[key]) - 1)
+            if isinstance(res[key][index], int):
+                res[key]  = random.choice(generate_random_numbers(res[key][index]))
+            if isinstance(res[key][index], str):
+                res[key] = mutate_string(res[key][index]).upper()
+    return res
+
+def mutate_type(json):
+    res = copy.deepcopy(json)
+    for key in res.keys():
+        type = random.randint(0, 7)
+        if type == 0: # string
+            res[key] = mutate_string('a'*random.randint(0, sys.maxsize))
+        if type == 1: # int
+            res[key] = random.randint(-sys.maxsize, sys.maxsize)
+        if type == 2: # boolean
+            res[key] = random.choice([True, False])
+        if type == 3: # list TODO
+            res[key] = list()
+        if type == 4: # None
+            res[key] = None
+        if type == 5: # float
+            res[key] = random.uniform(float('-inf'), float('inf'))
+        if type == 6: # dict
+            res[key] = {}
+    return res
+
+        
     
-    Process & Payload Handlers
-    ----------------------------------
-    These processes will parse our sample payload, handle communication to the process to test, and test our payloads.
-"""
-
-# Given the argument p, will attempt to open up the process.
-def open_process_csv(p):
-    try:
-        return process('./' + p)
-    except Exception as e:
-        print("invalid binary :(")
-        print(e)
-        sys.exit() 
-
-# Given the argument path, will attempt to parse the data into a 2d array
-def parse_csv_input(path):
-
-    data = []
-    try:
-        print("this is a list?")
-        print(path)
-        with open(path, newline='') as csv_file:
-            print(csv_file)
-            csv_reader = csv.reader(csv_file, delimiter=',')
-            for row in csv_reader:
-                print(len(row))
-                data.append(row)
-    except Exception as e:
-        print("invalid data :(")
-        print(e)
-        sys.exit() 
-    print("this is the data extracted:")
-    print(data)
-    return data
-
-# Given a processed csv 2d array, will grab the header i.e. the first line and return it.
-def generate_header(data):
-    payload = b''
-    for entry in data[0]:
-        payload += bytes(entry,'utf-8')
-        payload += b','
-
-    payload = payload[:-1]
-    payload += b'\n'
-
+def generate_random_numbers(size = 100):
+    nums = [0, 1, -1, -sys.maxsize, sys.maxsize, size, -size]
+    for i in range(LOOPS):
+        nums.append(random.randint(-size, size + 1000))
+    return nums
+################################
+### STRING STUFF
+################################
+def mutate_string(string):
+    size = random.randint(0, len(string) + 1000)
+    payload = ''
+    #payload = format_string(size)
+    payload = get_random_string(size)
     return payload
 
-# Given a payload, will send it to the program 5000 times, returning a negative number if the program hasn't crashed within this time. Otherwise, it will return the amount of times the payload needs to be inputted to crash the program.
-def test_payload(process, payload):
+def get_random_string(length):
+    c = cyclic_gen()
+    return c.get(length).decode()
 
-    p = open_process_csv(process)
+def format_string(size):
+    identifiers = ['%c', '%x', '%d', '%p', '%s']
+    identifier = random.choice(identifiers)
+    payload = ''
+    for i in range(size):
+        payload += identifier + ' '
+    return payload
 
-    run = 0
+#################################
+###     TEST
+#################################
+def test_payload(binary_file, res):
+    p = process('./' + binary_file)
+    context.log_level = 'error'
 
-    while run <= 5000:
+    p.sendline(json.dumps(res).encode())
+    p.proc.stdin.close()
+
+    exit_status = None
+    while exit_status == None:
+        p.wait()
+        exit_status = p.returncode
+    print("exit status:", exit_status, "-- segfault" if exit_status == -11 else 'REEEEEE')
+
+    mess = p.recvline(timeout = 0.1)
+    print('len: ', res['len'], 'input len: ', len(res['input']), mess)
+    p.close()
+
+#################################
+###     MAIN STUFF
+#################################
+def json_fuzzer(binary_file, input, loops=100):
+    json = read_json(input)
+    test_payload(binary_file, json)
+
+    for i in range(0, LOOPS):
         try:
-            p.sendline(payload)
-            run+=1
-        except:
-            p.wait_for_close()
-            return_tuple = (run, p.returncode)
-            return return_tuple
-            break;
-
-    return_tuple = (run * -1, p.returncode)
-    return return_tuple
-
-"""
-
-    Payload Generators
-    ----------------------------------
-    Will generate payloads of specific types and structure given the structre of the sample payload, and then pass the generated payload to test_payload() to test.
-
-    All payload generators take in the following arguments:
-
-    process - the process to test
-    data - the data from the sample payload
-    send_header - a boolean that if set to True, will keep the header intact for the payload.
-
-"""
-
-##
-##  empty_payload() generates a payload with only delimiters and no data
-##
-def empty_payload(process, data, send_header):
-    delimiter = len(data[0])
-    if(delimiter < 0):
-        delimiter = 0
-
-    payload = b''
-
-    if(send_header == True):
-        payload = generate_header(data)
+            res = mutate(json)
+            print('===', res['len'], '===', len(res['input']))
+            test_payload(binary_file, res)
+            
+            res = mutate_type(json)
+            print('===', res['len'], '===', len(res['input']))
+            test_payload(binary_file, res)
+        except Exception as e:
+            print(e)
     
-
-    payload += ((b','*delimiter) + b'\n')*len(data)
-    payload = payload[:-1]
-
-    return test_payload(process,payload)
-
-##
-##  zero_payload() generates a payload with all data entries set to zero.
-##
-def zero_payload(process, data, send_header):
-    delimiter = len(data[0])
-    if(delimiter < 0):
-        delimiter = 0
-
-    payload = b''
-
-    if(send_header == True):
-        payload = generate_header(data)
-
-    string = b'0,' * delimiter
-    string = string[:-1]
-    string += b'\n'
-    string *= len(data)
-
-    payload += string
-    
-    return test_payload(process,payload)
-
-##
-##  negative_payload() generates a payload with all data entries set to negative one.
-##
-def negative_payload(process, data, send_header):
-    delimiter = len(data[0])
-    if(delimiter < 0):
-        delimiter = 0
-
-    payload = b''
-
-    if(send_header == True):
-        payload = generate_header(data)
-
-    string = b'-1,' * delimiter
-    string = string[:-1]
-    string += b'\n'
-    string *= len(data)
-
-
-    payload += string
-    payload = payload[:-1]
-    
-    return test_payload(process,payload)
-    
-##
-##  large_payload() generates a payload with large data for each csv entry, with size specified with the size parameter.
-##
-def large_payload(process, data, size, send_header):
-    delimiter = len(data[0])
-    if(delimiter < 0):
-        delimiter = 0
-
-    string = b'a'*size + b','
-    string *= delimiter
-    string = string[:-1]
-    string += b'\n'
-    string *= len(data)
-    string = string[:-1]
-
-    return test_payload(process,string)
-
-
-"""
-
-    Test code for payloads, will print out reports in the console
-
-"""
-
-def csv_payload(process,file):
-    data = parse_csv_input(file)
-
-    runs = empty_payload(process,data,True)
-    print("runs required for empty payload: " + str(runs[0]))
-    print("return code for this run was: " + str(runs[1]))
-
-    runs = zero_payload(process,data,True)
-    print("runs required for zero payload: " + str(runs[0]))
-    print("return code for this run was: " + str(runs[1]))
-
-    runs = negative_payload(process,data,True)
-    print("runs required for negative payload: " + str(runs[0]))
-    print("return code for this run was: " + str(runs[1]))
-
-    runs = large_payload(process,data,100,True)
-    print("runs required for large payload: " + str(runs[0]))
-    print("return code for this run was: " + str(runs[1]))
-
-
-
