@@ -66,18 +66,20 @@ def test_payload(process, payload):
     p = open_process_csv(process)
 
     run = 0
-    total = ''
+    total = b''
+
     while run <= 5000:
         try:
             p.sendline(payload)
             run+=1
-            total += str(payload)
+            total += payload
+            total += b'\n'
         except:
             p.wait_for_close()
             return_tuple = (run, p.returncode)
             if (p.returncode == -11):
                 print("Program terminated: Check 'bad.txt' for output")
-                log_crash(total)
+                log_crash(str(total,'utf-8'))
                 exit(0)
             return return_tuple
             break;
