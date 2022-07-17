@@ -4,7 +4,7 @@ from support import detect
 class Harness():
     def __init__(self, binary):
 		self.binary = binary
-
+		
 	def start_process(self, payload):
 		""" start a process to binayy """
 		with subprocess.Popen(

@@ -15,18 +15,6 @@ def detect(file):
     if result == "jpeg":
         return result
 
-    # Try for CSV
-    try:
-        with open(file, newline='') as csvfile:
-            start = csvfile.read(4096)
-            if not all([p in string.printable or p.isprintable() for p in start]):
-                pass
-            else:
-                dialect = csv.Sniffer().sniff(start)
-                return "csv"
-    except csv.Error:
-        pass
-
     # Try for JSON
     try:
         with open(file) as jsonfile:
@@ -43,6 +31,19 @@ def detect(file):
             return "xml"
     except:
         pass
+    
+    # Try for CSV
+    try:
+        with open(file, newline='') as csvfile:
+            start = csvfile.read(4096)
+            if not all([p in string.printable or p.isprintable() for p in start]):
+                pass
+            else:
+                dialect = csv.Sniffer().sniff(start)
+                return "csv"
+    except csv.Error:
+        pass
+
     
     # Else return plain
     return "plain"
