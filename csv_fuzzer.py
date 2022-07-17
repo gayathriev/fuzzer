@@ -188,21 +188,24 @@ def large_payload(process, data, size, send_header):
 
 """
 
-data = parse_csv_input(sys.argv[2])
+def csv_payload(process,data):
+    data = parse_csv_input(sys.argv[2])
 
-runs = empty_payload(sys.argv[1],data,True)
-print("runs required for empty payload: " + str(runs[0]))
-print("return code for this run was: " + str(runs[1]))
+    runs = empty_payload(sys.argv[1],data,True)
+    print("runs required for empty payload: " + str(runs[0]))
+    print("return code for this run was: " + str(runs[1]))
 
-runs = zero_payload(sys.argv[1],data,True)
-print("runs required for zero payload: " + str(runs[0]))
-print("return code for this run was: " + str(runs[1]))
+    runs = zero_payload(sys.argv[1],data,True)
+    print("runs required for zero payload: " + str(runs[0]))
+    print("return code for this run was: " + str(runs[1]))
 
-runs = negative_payload(sys.argv[1],data,True)
-print("runs required for negative payload: " + str(runs[0]))
-print("return code for this run was: " + str(runs[1]))
+    runs = negative_payload(sys.argv[1],data,True)
+    print("runs required for negative payload: " + str(runs[0]))
+    print("return code for this run was: " + str(runs[1]))
 
-runs = large_payload(sys.argv[1],data,100,True)
-print("runs required for large payload: " + str(runs[0]))
-print("return code for this run was: " + str(runs[1]))
+    runs = large_payload(sys.argv[1],data,100,True)
+    print("runs required for large payload: " + str(runs[0]))
+    print("return code for this run was: " + str(runs[1]))
+
+
 
