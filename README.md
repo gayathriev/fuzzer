@@ -4,7 +4,7 @@ Fuzzer
 ## Team Members
 | Name                   | zID      |
 | ---------------------- |----------|
-| Mae Vuong              | z        |
+| Mae Vuong              | z5286353 |
 | Edmund O'Ryan          | z5114478 |
 | James He               | z5161088 |
 | Gayathrie Vijayalingam | z5193713 |
