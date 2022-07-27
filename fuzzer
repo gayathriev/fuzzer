@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+import sys
+import os
+from support.detect import detect
+from pwn import *
+# from Harness import Harness
+from modes.json_fuzzer import json_fuzzer
+from modes.xml_fuzzer import xml_fuzzer
+from modes.csv_fuzzer import csv_fuzzer
+
+BINARY_FOLDER = "binaries/"
+SEGFUALT_SIGNAL = -11
+
+if len(sys.argv) != 3:
+    sys.exit("Usage: python3 fuzzer.py [binaryName] [sampleInput]")
+
+binary_file = BINARY_FOLDER + sys.argv[1]
+# print("Binary: " + binary_file)
+input_file = BINARY_FOLDER + sys.argv[2]
+# print("Input File: " + input_file)
+
+# binary = BINARY_FOLDER + binary_file
+# if not (os.path.isfile(binary)):
+#     sys.exit("Binary does not exist")
+
+# sample = BINARY_FOLDER + input_file
+# if not (os.path.isfile(sample)):
+#     sys.exit("Sample input does not exist")
+
+'''
+Test case - determine data type
+Execute fuzzer for specific data type:
+ 1. Plaintext (multiline) @TODO
+ 2. JSON
+ 3. XML
+ 4. CSV
+ 5. JPEG @TODO
+ 6. ELF  @TODO
+ 7. PDF  @TODO
+'''
+
+mode_type = detect(input_file)
+# make instance of fuzzer from detected mode
+
+def run_fuzzer():
+    """ start the fuzzing campaign """
+    if (mode_type == 'json'):
+        # calls json_fuzzer
+        json_fuzzer(binary_file, input_file)
+
+    elif (mode_type == 'csv'):
+        # calls csv_fuzzer
+        csv_fuzzer(binary_file, input_file)
+
+
+    elif (mode_type == 'xml'):
+        # calls xml_fuzzer
+        xml_fuzzer(binary_file, input_file)
+
+    else:
+        print("File format not supported yet.")
+
+run_fuzzer()

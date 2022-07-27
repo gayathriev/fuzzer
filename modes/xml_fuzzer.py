@@ -5,6 +5,7 @@ import random
 import copy
 import xml
 import xml.etree.ElementTree as ET
+from support.log_crash import log_crash
 
 from pwn import *
 
@@ -64,6 +65,17 @@ def test_payload(binary_file, xml):
     payload = xml
     p.send(payload)
     p.proc.stdin.close()
+
+    exit_status = None
+    while exit_status == None:
+        p.wait()
+        exit_status = p.returncode
+    # print("exit status:", exit_status, "-- segfault" if exit_status == -11 else 'REEEEEE')
+    if (exit_status == -11):
+        print("Program terminated: Check 'bad.txt' for output")
+        log_crash(payload.decode("utf-8"))
+        exit(0)
+    
     mess = p.recvlines(2, timeout=0.2)
     p.close()
     print(mess)
