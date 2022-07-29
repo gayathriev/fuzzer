@@ -5,6 +5,7 @@ import random
 import copy
 import xml
 import xml.etree.ElementTree as ET
+import re
 from support.log_crash import log_crash
 
 from pwn import *
@@ -53,9 +54,6 @@ def breed_child(child, parent, xml):
     parent.append(_root)
 
     return root
-
-#def bit_flip(byte):
-#    return byte ^ random.choice([1, 2, 4, 8, 16, 32, 64, 128])
 
 # Sets attribute value in tag to input
 def set_tag(xml, tag, attr, input):
@@ -107,6 +105,29 @@ def fuzz_by_injection(xml):
     for res in inject(xml, rand_str()):
         yield res
 
+# Arithmetic: Increment all integer values from -35 to 35
+def arithmetic(xml):
+    xml_str = tree_to_string(xml).decode('utf-8')
+
+    res = re.findall('[0-9]+', xml_str)
+    
+    for i in range(-35, 35):
+        new_xml = xml_str
+        for num in res:
+            target = str(int(num) + i)
+            new_xml = new_xml.replace(num, target)
+            yield ET.fromstring(new_xml)
+# Byte Flips: Flips bytes at a 5% chance for every byte in the XML payload, looped 100 times
+def byte_flips(xml):
+    xml_str = tree_to_string(xml).decode('utf-8')
+    xml_bytes = bytearray(xml_str, 'utf-8')
+    for i in range(0, 100):
+        for x in range(0, len(xml_bytes)):
+            if random.randint(0, 20) == 1:
+                xml_bytes[x] ^= random.getrandbits(7)
+            res = xml_bytes.decode('ascii')
+            yield ET.fromstring(res)
+
 #################################
 ###     TEST
 #################################
@@ -140,8 +161,24 @@ def generate_input(xml):
     print("original")
     print("----------------------")
     input = tree_to_string(xml)
+    print(input)
     yield input
-
+    
+    # Arithmetic
+    print("Arithmetic")
+    print("----------------------")
+    for x in arithmetic(xml):
+        input = tree_to_string(x)
+        yield input
+    '''
+    # WORKING, causing parseerror, harness will abort
+    # Byte Flips
+    print("Byte Flips")
+    print("----------------------")
+    for x in byte_flips(xml):
+        input = tree_to_string(x)
+        yield input
+    '''
     # Add child to parent rand times
     print("breadthwise add")
     print("----------------------")
