@@ -74,7 +74,7 @@ def test_payload(process, payload):
     run = 0
     print("attempting 5000 runs with the following payload:")
     print(payload)
-    while run <= 1000000:
+    while run <= 5000:
         try:
             p.sendline(payload)
             run+=1
