@@ -9,7 +9,19 @@ from support.log_crash import log_crash
 
 from pwn import *
 
-MAX_BUF = 0x999
+MAX_BUF = 0x500
+FUZZ_INPUTS = ['null', '*', '%', '@', '$', '-', '+', ';', ':', 'true', 'false', '0', '%%', '%p', '%d', '%c', '%u', '%x', '%s', '%n', ' ']
+KNOWN_INTS = [0, 1, 9, 256, 1024, 0x7F, 0xFF, 0x7FFF, 0xFFFF, 0x80, 0x8000, MAX_BUF]
+
+# Create random string from 0x20 to 0x7E from ascii table
+def rand_str():
+    start = 32
+    end = 126
+    str_len = random.randrange(0, MAX_BUF)
+    output = ""
+    for i in range(0, str_len):
+        output += chr(random.randrange(start, end))
+    return output
 
 def tree_to_string(tree):
     return ET.tostring(tree)
@@ -42,20 +54,58 @@ def breed_child(child, parent, xml):
 
     return root
 
-def bit_flip(byte):
-    return byte ^ random.choice([1, 2, 4, 8, 16, 32, 64, 128])
+#def bit_flip(byte):
+#    return byte ^ random.choice([1, 2, 4, 8, 16, 32, 64, 128])
 
-def inject_overflow(xml):
+# Sets attribute value in tag to input
+def set_tag(xml, tag, attr, input):
     root = copy.deepcopy(xml)
-    for c in root.iter('a'):
-        c.set("href", "https://" + "A" * MAX_BUF + ".com")
+    for c in root.iter(tag):
+        c.set(attr, input)
     return root
 
-def inject_fstring(xml):
+# Inject tags from tuple lists with generated input
+# TODO: Clean up tuple_list, convert to attrib/tag loop
+def inject_tag(xml, input):
+    tuple_list = [('a', 'href'), ('link', 'href'), ('div', 'id'), ('div', 'class'), ('abbr', 'title'), ('source', 'src'), 
+    ('source', 'type'), ('data', 'value'), ('datalist', 'id'), ('option', 'value'), ('input', 'list'), ('input', 'name'), 
+    ('input', 'id'), ('label', 'for'), ('svg', 'width')]
+    for tag in tuple_list:
+        yield set_tag(xml, tag[0], tag[1], input)
+
+# Inject input into text between all sets of tags
+def inject_text(xml, input):
     root = copy.deepcopy(xml)
-    for c in root.iter('a'):
-        c.set("href", "https://" + "%s" * 0x500 + ".com")
+    for elem in root.iter():
+        if type(elem.text) != str:
+            continue
+        if not elem.text.isspace():
+            elem.text = input
     return root
+
+# Injecting into XML
+def inject(xml, text, mul = 1):
+    if mul > 1024:
+        text = text[:1]
+    # Inject into tag
+    for res in inject_tag(xml, (text * mul)):
+        yield res
+    # Inject into text
+    yield inject_text(xml, (text * mul))
+
+def fuzz_by_injection(xml):
+    for x in FUZZ_INPUTS:
+        for res in inject(xml, x):
+            yield res
+    for y in KNOWN_INTS:
+        # Format Str
+        for res in inject(xml, "%s", y):
+            yield res
+        # Raw Byte
+        for res in inject(xml, "A", y):
+            yield res
+    for res in inject(xml, rand_str()):
+        yield res
 
 #################################
 ###     TEST
@@ -109,33 +159,15 @@ def generate_input(xml):
             input = tree_to_string(mutated)
             yield input
 
-    # Inject fstring
-    print("inject fstring")
-    print("----------------------")
-    mutated = inject_fstring(xml)
-    input = tree_to_string(mutated)
-    yield input
-
-    # Overflow link
-    print("overflow link")
-    print("----------------------")
-    mutated = inject_overflow(xml)
-    input = tree_to_string(mutated)
-    yield input
-
-    # Content int overflow (2 ** 31)
-
-    # Content int underflow (-2 ** 31)
-
-    # Child name overflow
-
-    # Child name fstring
+    print("known int + overflow + fmt str injection")
+    print("----------------------") 
+    for x in fuzz_by_injection(xml):
+        input = tree_to_string(x)
+        yield input
 
     # Bit flips
 
     # Byte flips
-
-    # Known ints
 
     # Repeated parts
 
@@ -144,20 +176,6 @@ def generate_input(xml):
     # Arithmetic
 
     # Coverage based mutations
-
-    # Buffer overflow tag names
-
-    # Buffer overflow tag properties
-
-    # Tag Name to Format String
-
-    # Tag Properties to Format String
-
-    # Big print
-
-    # Properties --> bad ints
-
-    # Content --> bad ints
 
     # Bit shift
 
