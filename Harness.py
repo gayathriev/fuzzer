@@ -1,10 +1,10 @@
 from signal import signal, SIGINT
+import subprocess
 from support import detect
 
 class Harness():
-    def __init__(self, binary):
+	def __init__(self, binary):
 		self.binary = binary
-		
 	def start_process(self, payload):
 		""" start a process to binayy """
 		with subprocess.Popen(
@@ -16,11 +16,5 @@ class Harness():
 
 			proc.communicate(payload.encode())
 			res = proc.wait(timeout=0.5)
+			#print(proc.returncode)
 			return proc.returncode
-
-
-@ TODO 
-'''
-Check process health
-'''
-
