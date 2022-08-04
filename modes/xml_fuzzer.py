@@ -117,6 +117,7 @@ def arithmetic(xml):
             target = str(int(num) + i)
             new_xml = new_xml.replace(num, target)
             yield ET.fromstring(new_xml)
+
 # Byte Flips: Flips bytes at a 5% chance for every byte in the XML payload, looped 100 times
 def byte_flips(xml):
     xml_str = tree_to_string(xml).decode('utf-8')
@@ -153,70 +154,41 @@ def test_payload(binary_file, xml):
 
 def generate_input(xml):
     # Empty input
-    print("empty")
-    print("----------------------")
     yield b''
 
     # Original input
-    print("original")
-    print("----------------------")
     input = tree_to_string(xml)
     print(input)
     yield input
     
     # Arithmetic
-    print("Arithmetic")
-    print("----------------------")
     for x in arithmetic(xml):
         input = tree_to_string(x)
         yield input
-    '''
+    
     # WORKING, causing parseerror, harness will abort
     # Byte Flips
-    print("Byte Flips")
-    print("----------------------")
     for x in byte_flips(xml):
         input = tree_to_string(x)
         yield input
-    '''
+
     # Add child to parent rand times
-    print("breadthwise add")
-    print("----------------------")
     for child in xml:
         mutated = span_child(child, xml)
         input = tree_to_string(mutated)
         yield input
 
     # Recursively add random child to itself rand times
-    print("depthwise add")
-    print("----------------------")
     for parent in xml:
         for child in xml:
             mutated = breed_child(child, parent, xml)
             input = tree_to_string(mutated)
             yield input
 
-    print("known int + overflow + fmt str injection")
-    print("----------------------") 
+    # known int + overflow + fmt str injection
     for x in fuzz_by_injection(xml):
         input = tree_to_string(x)
         yield input
-
-    # Bit flips
-
-    # Byte flips
-
-    # Repeated parts
-
-    # Keyword extraction
-
-    # Arithmetic
-
-    # Coverage based mutations
-
-    # Bit shift
-
-    # Node Shuffle
 
 #################################
 ###     MAIN STUFF
@@ -224,8 +196,12 @@ def generate_input(xml):
 def xml_fuzzer(binary_file, input):
     xml = read_xml(input)
     for test in generate_input(xml):
+        # Returns input string iteratively through yield
+        yield test
+        '''
         try:
             test_payload(binary_file, test)
         except Exception as e:
             print(e)
+        '''
         
