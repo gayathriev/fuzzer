@@ -11,7 +11,7 @@ from support.log_crash import log_crash
 from pwn import *
 
 MAX_BUF = 0x500
-FUZZ_INPUTS = ['null', '*', '%', '@', '$', '-', '+', ';', ':', 'true', 'false', '0', '%%', '%p', '%d', '%c', '%u', '%x', '%s', '%n', ' ']
+FUZZ_INPUTS = ['null', '%s','*', '%', '@', '$', '-', '+', ';', ':', 'true', 'false', '0', '%%', '%n', ' ']
 KNOWN_INTS = [0, 1, 9, 256, 1024, 0x7F, 0xFF, 0x7FFF, 0xFFFF, 0x80, 0x8000, MAX_BUF]
 
 # Create random string from 0x20 to 0x7E from ascii table
@@ -142,15 +142,12 @@ def test_payload(binary_file, xml):
     while exit_status == None:
         p.wait()
         exit_status = p.returncode
-    # print("exit status:", exit_status, "-- segfault" if exit_status == -11 else 'REEEEEE')
     if (exit_status == -11):
         print("Program terminated: Check 'bad.txt' for output")
         log_crash(payload.decode("utf-8"))
         exit(0)
     
-    mess = p.recvlines(2, timeout=0.2)
     p.close()
-    print(mess)
 
 def generate_input(xml):
     # Empty input
@@ -161,14 +158,8 @@ def generate_input(xml):
     print(input)
     yield input
     
-    # Arithmetic
-    for x in arithmetic(xml):
-        input = tree_to_string(x)
-        yield input
-    
-    # WORKING, causing parseerror, harness will abort
-    # Byte Flips
-    for x in byte_flips(xml):
+    # known int + overflow + fmt str injection
+    for x in fuzz_by_injection(xml):
         input = tree_to_string(x)
         yield input
 
@@ -185,8 +176,13 @@ def generate_input(xml):
             input = tree_to_string(mutated)
             yield input
 
-    # known int + overflow + fmt str injection
-    for x in fuzz_by_injection(xml):
+    # Arithmetic
+    for x in arithmetic(xml):
+        input = tree_to_string(x)
+        yield input
+    
+    # Byte Flips
+    for x in byte_flips(xml):
         input = tree_to_string(x)
         yield input
 
@@ -198,10 +194,5 @@ def xml_fuzzer(binary_file, input):
     for test in generate_input(xml):
         # Returns input string iteratively through yield
         yield test
-        '''
-        try:
-            test_payload(binary_file, test)
-        except Exception as e:
-            print(e)
-        '''
+        
         
