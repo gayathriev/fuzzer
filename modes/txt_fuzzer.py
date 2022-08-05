@@ -20,14 +20,13 @@ def read_txt(input_file):
         return f.readlines()
 
 
+# Yield large negatives
 def large_negatives():
-    """ Gen large negative integers """
     for i in range(0, 32):
         yield str(-(2 ** i))
 
-
+# Yield large positives
 def large_positives():
-    """ Gen large negative integers """
     for i in range(0, 32):
         yield str(2 ** i)
 
@@ -82,7 +81,14 @@ def bit_flip_values():
     yield 128
     yield 255
 
-# keywords
+# def keywords():
+#     yield f'{data}/bin/sh{arg}'
+# 	yield f'{data}/bin/bash{arg}'
+# 	yield f'{data}/bin/zsh{arg}'
+# 	yield f'{data}fork{arg}'
+# 	yield f'{data}exec{arg}'
+# 	yield f'{data}exit{arg}'
+
 
 # def pack_stream(bytes):
 # 	""" pack csv list into string """
@@ -174,4 +180,7 @@ def txt_fuzzer(binary_file, input_file):
     #         for mutation in xor_bytes(stream, line, num):
     #             perm_inputs.append(mutation)
 
+
+    # append control charcaters
+    # search for string and change
     return perm_inputs
