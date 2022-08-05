@@ -1,12 +1,9 @@
-from email import contentmanager
 import io
 import sys
 import os
 import random
-import copy
 import re
 import PyPDF2
-from pwn import *
 
 MAX_BUF = 0x5000
 
@@ -105,11 +102,11 @@ def generate_input(reader):
 ###     MAIN STUFF
 #################################
 def pdf_fuzzer(binary_file, input):
-    pdf = read_pdf(binary_file)
+    pdf = read_pdf(input)
     reader = pdf[0]
     file = pdf[1]
-
-    for test in generate_input(pdf):
+    
+    for test in generate_input(reader):
         yield test
 
     file.close()
