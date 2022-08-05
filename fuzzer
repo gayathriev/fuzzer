@@ -7,12 +7,13 @@ from pwn import *
 from modes.json_fuzzer import json_fuzzer
 from modes.xml_fuzzer import xml_fuzzer
 from modes.csv_fuzzer import csv_fuzzer
+from modes.pdf_fuzzer import pdf_fuzzer
 
 BINARY_FOLDER = "binaries/"
 SEGFUALT_SIGNAL = -11
 
 if len(sys.argv) != 3:
-    sys.exit("Usage: python3 fuzzer.py [binaryName] [sampleInput]")
+    sys.exit("Usage: ./fuzzer [binaryName] [sampleInput]")
 
 binary_file = BINARY_FOLDER + sys.argv[1]
 # print("Binary: " + binary_file)
@@ -52,10 +53,13 @@ def run_fuzzer():
         # calls csv_fuzzer
         csv_fuzzer(binary_file, input_file)
 
-
     elif (mode_type == 'xml'):
         # calls xml_fuzzer
         xml_fuzzer(binary_file, input_file)
+
+    elif (mode_type == 'pdf'):
+        # calls pdf_fuzzer
+        pdf_fuzzer(binary_file, input_file)
 
     else:
         print("File format not supported yet.")
