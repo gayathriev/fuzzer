@@ -1,3 +1,4 @@
+from email import contentmanager
 import io
 import sys
 import os
@@ -8,8 +9,6 @@ import PyPDF2
 from pwn import *
 
 MAX_BUF = 0x5000
-FUZZ_INPUTS = ['null', '*', '%', '@', '$', '-', '+', ';', ':', 'true', 'false', '0', '%%', '%p', '%d', '%c', '%u', '%x', '%s', '%n', ' ']
-KNOWN_INTS = [0, 1, 9, 256, 1024, 0x7F, 0xFF, 0x7FFF, 0xFFFF, 0x80, 0x8000, MAX_BUF]
 
 # Reads pdf file and returns mutable pdfReader object
 def read_pdf(filename):
@@ -35,6 +34,7 @@ def print_pdf(writer):
     print(len(result))
     stream.seek(0)
     stream.truncate(0)
+    return result
 
 # Return empty pdf
 def empty_pdf():
@@ -51,30 +51,55 @@ def large_pdf(reader):
             writer.add_page(page)
         yield writer
 
-# Return input pdf without any images
-def nullify_pdf_images(reader):
-    writer = clone_pdf(reader)
+# Return input pdf with format string injection
+def edit_pdf(reader):
+    writer = PyPDF2.PdfFileWriter()
+    page = reader.pages[0]
+    writer.add_page(page)
 
-    writer.remove_text()
-    return writer
+    stream = io.BytesIO()
+    writer.write(stream)
+    result = stream.getvalue()
+
+    inject = b'(' + b'%s' * MAX_BUF + b')'
+    new_pdf = re.sub(b'\((.*?)\)', inject, result)
+    print(len(new_pdf))
+    
+    return new_pdf
+
+# Return input pdfs with different types of  filters
+def replace_filters(reader):
+    filter_types = ["/FlateDecode", "/ASCIIHexDecode", "/ASCII85Decode", "/LZWDecode", "/RunLengthDecode", "/CCITTFaxDecode", "/JBIG2Decode", "/DCTDecode", "/JPXDecode", "/Crypt"]
+
+    writer = clone_pdf(reader)
+    pdf = print_pdf(writer)
+    
+    for type in filter_types:
+        byte_str = b'/Filter ' + bytes(type, 'utf-8') + b'\n'
+        new_pdf = re.sub(b'/Filter /.+\n', byte_str, pdf)
+        yield new_pdf
 
 def generate_input(reader):
     # Empty pdf file
     print("testing empty")
-    yield empty_pdf()
-
-    print("testing no images")
-    # Remove all images from pdf
-    yield nullify_pdf_images(reader)
+    yield print_pdf(empty_pdf())
 
     # Original input file
-    print("orginal")
-    yield clone_pdf(reader)
+    print("testing orginal")
+    yield print_pdf(clone_pdf(reader))
+
+    print("testing replacing filter types")
+    for x in replace_filters(reader):
+        yield x
+    
+    print("testing edit pdf")
+    # Remove all images from pdf
+    yield edit_pdf(reader)
 
     print("testing large")
     # Large pdf
     for x in large_pdf(reader):
-        yield x
+        yield print_pdf(x)
 
 #################################
 ###     MAIN STUFF
@@ -88,13 +113,3 @@ def pdf_fuzzer(binary_file, input):
         yield test
 
     file.close()
-pdf = read_pdf('example.pdf')
-reader = pdf[0]
-file = pdf[1]      
-
-for test in generate_input(reader):
-    print_pdf(test)
-
-
-
-file.close()
