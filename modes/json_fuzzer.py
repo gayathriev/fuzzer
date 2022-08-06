@@ -5,6 +5,7 @@ import json
 import copy
 import random
 from support.log_crash import log_crash_json
+from Harness import Harness
 import coverage
 
 LOOPS = 6000
@@ -105,18 +106,11 @@ def format_string(size):
 #################################
 ###     TEST
 #################################
-def test_payload(binary_file, res):
-    p = process('./' + binary_file)
-    context.log_level = 'error'
+def test_payload(harness, binary_file, res):
 
-    p.sendline(json.dumps(res).encode())
-    p.proc.stdin.close()
+    payload = json.dumps(res)
+    exit_status = harness.start_process(payload)
 
-    exit_status = None
-    while exit_status == None:
-        p.wait()
-        exit_status = p.returncode
-    #print("exit status:", exit_status, "-- segfault" if exit_status == -11 else 'REEEEEE')
     if (exit_status == -11):
         print("Program terminated: Check 'bad.txt' for output")
         log_crash_json(res)
@@ -124,38 +118,31 @@ def test_payload(binary_file, res):
     elif (exit_status != 0):
         print("status code: ", exit_status)
 
-    #mess = p.recvline(timeout = 0.1)
-    #print(mess)
-    p.close()
 
 #################################
 ###     MAIN STUFF
 #################################
-def json_fuzzer(binary_file, input, loops=LOOPS):
+def json_fuzzer(harness, binary_file, input, loops=LOOPS):
     js = read_json(input)
     print("============== running json fuzzer ==============")
-    test_payload(binary_file, js)
+    test_payload(harness, binary_file, js)
     res = nullify(js)
-    test_payload(binary_file, res)
+    test_payload(harness, binary_file, res)
     entropy = res
     for i in range(0, LOOPS):
         try:
             res = mutate(js)
-            print(res)
-            test_payload(binary_file, res)
+            test_payload(harness, binary_file, res)
             
             res = mutate_type(js)
-            print(res)
-            test_payload(binary_file, res)
+            test_payload(harness, binary_file, res)
 
 
             entropy = mutate(entropy)
-            print(entropy)
-            test_payload(binary_file, entropy)
+            test_payload(harness, binary_file, entropy)
 
             entropy = mutate_type(entropy)
-            print(entropy)
-            test_payload(binary_file, entropy)
+            test_payload(harness, binary_file, entropy)
                    
         except Exception as e:
             print("exception", e)
