@@ -48,12 +48,15 @@ def detect(file):
                 pass
             else:
                 dialect = csv.Sniffer().sniff(start)
-                return "csv"
+                name = file.split('/')[-1]
+                if name.startswith('csv') or name.endswith('.csv'):
+                    return "csv"
+                return "txt"
     except csv.Error:
         pass
 
     # Else return plain
-    return "plain"
+    return "txt"
 
 if __name__ == '__main__':
     print(detect('../tests/inputs/csv1.txt'))
