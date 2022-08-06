@@ -12,8 +12,6 @@ KNOWN_INTS = ['0','255', '256', '4294967295', '2147483648', '1844674407370955161
 
 BIT_FLIP_VALS = [1, 2, 4, 8, 16, 32, 64, 128, 255]
 
-SYSTEM_KEYWORDS = ['']
-
 # read sameple file 
 def read_txt(input_file):
     with open(input_file) as f:
@@ -58,12 +56,14 @@ def cyclic_gen():
 
 # keywords
 
-def pack_stream(bytes):
-	""" pack csv list into string """
-	return "".join(map(chr, bytes))
+# def pack_stream(bytes):
+# 	""" pack csv list into string """
+# 	return "".join(map(chr, bytes))
 
 
-# Byte flipping
+
+
+# Byte flippinf
 def xor_bytes(bytes, index, value):
     prev_byte = bytes[index]
     bytes[index] ^= value
@@ -71,23 +71,9 @@ def xor_bytes(bytes, index, value):
     bytes[index] = prev_byte
 
 
-# Xor-ing each character with 255
-def xor_string(input):
-    payload = ''
-    for charc in input:
-        payload = ''.join(chr(ord(charc) ^ 0xFF))
-    return payload
-# def xor_string(data):
-# 	return ''.join(chr(ord(char) ^ 0xFF) for char in data)
+def xor_string(data):
+	return ''.join(chr(ord(char) ^ 0xFF) for char in data)
 
-def random_byte_flip(input, index):
-
-    # sample_length = len(input)
-    # index = random.choice(range(0, sample_length))
-    mask = random.choice(BIT_FLIP_VALS)
-    input = input ^ mask
-
-    return input
 
 # Add random charcters
 def add_random_characters():
@@ -112,7 +98,14 @@ def negate_number(lines):
     return payload
 
 
-
+# ADD THESE TO FUZZER 
+'''
++ KEYWORDDS
++ CONTROL
++ NEGATE NUMBERS
++ CHANGE UP LOOPS
++ FIX CODECS
+'''
 def txt_fuzzer(binary_file, input_file):
 
     sample_txt = read_txt(input_file)
@@ -135,10 +128,10 @@ def txt_fuzzer(binary_file, input_file):
 
     # Expand line
     mutated_copy = copy.deepcopy(sample_txt)
-    mc = ""
+    payload = ""
     for line in mutated_copy:
-        mc += line[:-1] * 4 + "\n"
-        perm_inputs.append("".join(mc))
+        payload += line[:-1] * 4 + "\n"
+        perm_inputs.append("".join(payload))
     
     
     # Use known integers
@@ -174,40 +167,25 @@ def txt_fuzzer(binary_file, input_file):
         perm_inputs.append("".join(mutation))
     
 
-    # append to a newline
     mutation = copy.deepcopy(sample_txt)
     for line in range(len(mutation)):
+        # append on newline
         mutation[line] = (xor_string(mutation[line]) + '\n')
         perm_inputs.append("".join(mutation))
         mutation = copy.deepcopy(sample_txt)
     
-    # Add to the front of line
-    mutation = copy.deepcopy(sample_txt)
-    for line in range(len(mutation)):
-        mutation.insert(0, xor_string(mutation[line]))
-        perm_inputs.append("".join(mutation))
+    # mutation = copy.deepcopy(sample_txt)
+    # for line in range(len(mutation)):
+    #     # prepend
+    #     mutation.insert(0, xor_string(mutation[line]))
+    #     perm_inputs.append("".join(mutation))
 
 
     # stream = list("".join(copy.deepcopy(sample_txt)).encode())
     # for line in range(len(stream)):
     #     # byte by byte
-    #     print(line)
-    #     print(stream[line])
-    #     for num in BIT_FLIP_VALS:
+    #     for num in bit_flip_values():
     #         for mutation in xor_bytes(stream, line, num):
     #             perm_inputs.append(mutation)
 
-    # lines_list = list("".join(copy.deepcopy(sample_txt)).encode())
-    # for num in range(len(lines_list)):
-    #     # byte by byte
-    #     print(lines_list)
-    #     print(lines_list[num])
-    #     mutated_line = (lines_list[num], num)
-        
-    #     perm_inputs.append("".join(map(chr, mutated_line)))
-        # for num in random_byte_flip():
-        #     for mutation in xor_bytes(stream, line, num):
-        #         perm_inputs.append(mutation)
-
-    
     return perm_inputs

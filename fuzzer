@@ -51,28 +51,22 @@ def run_fuzzer():
         # calls json_fuzzer
         json_fuzzer(binary_file, input_file)
 
-    # elif (mode_type == 'csv'):
-    #     # calls csv_fuzzer
-    #     csv_fuzzer(binary_file, input_file)
+    elif (mode_type == 'csv'):
+        # calls csv_fuzzer
+        csv_fuzzer(binary_file, input_file)
 
 
     elif (mode_type == 'xml'):
         # calls xml_fuzzer
         xml_fuzzer(binary_file, input_file)
 
-    elif (mode_type == 'plain' or mode_type == 'csv'):
-        # calls txt_fuzzer --> chnage to harness!
+    elif (mode_type == 'txt'):
+        # calls txt_fuzzer
         payloads = txt_fuzzer(binary_file, input_file)
-        # Harness.start_process()
         for payload in payloads:
             exit_status = harness.start_process(payload)
-            #print('Here')
-            print("============================")
-            #print(payload)
             if exit_status == SEGFAULT_CODE:
-                print(payload)
                 log_crash(payload)
-                print("exit")
                 exit(0)
 
 
@@ -80,6 +74,6 @@ def run_fuzzer():
         print("File format not supported yet.")
         return
     
-    
+    Harness.no_summary()
 
 run_fuzzer()
