@@ -2,7 +2,8 @@ from pwn import *
 import csv
 from enum import Enum
 import random
-
+import math
+from support.log_crash import log_crash
 class Payload(Enum):
     EMPTY = 1
     INVALID = 2
@@ -27,7 +28,7 @@ class Payload(Enum):
 # Given the argument p, will attempt to open up the process.
 def open_process_csv(p):
     try:
-        return process('./' + p)
+        return process('./' + p,stdin=PTY,raw=False)
     except Exception as e:
         print("invalid binary :(")
         print(e)
@@ -66,29 +67,73 @@ def generate_header(data):
 
     return payload
 
-# Given a payload, will send it to the program 5000 times, returning a negative number if the program hasn't crashed within this time. Otherwise, it will return the amount of times the payload needs to be inputted to crash the program.
-def test_payload(process, payload):
-
+def run_test(process,payload,multiplier):
     p = open_process_csv(process)
 
+    for i in range(0,multiplier):
+        p.send(payload)
+
+    p.send(b'\4')
+
+    p.wait_for_close(timeout=0.5)
+
+    return p.poll()
+
+
+# Given a payload, will send it to the program 5000 times, returning a negative number if the program hasn't crashed within this time. Otherwise, it will return the amount of times the payload needs to be inputted to crash the program.
+def test_payload(process, payload):
+    
+    
     run = 0
-    print("attempting 5000 runs with the following payload:")
-    print(payload)
-    while run <= 5000:
-        try:
-            p.sendline(payload)
-            run+=1
-        except Exception as e:
-            p.wait_for_close()
-            print("ayylmao this is the error:")
-            print(e)
-            return_tuple = (run, p.returncode)
+    bad = b''
+
+    l = 1
+    r = 5000
+
+    while(l <= r):
+        results = (run_test(process,payload,l),run_test(process,payload,r))
+
+        #print(results)
+
+        m = math.floor((l+r)/2)
+
+        if(results[0] != -11 and results[1] == -11):
+            #print("values of l and are are: " +str(l) + " " + str(r))
+            #print("value of m is " + str(m))
+            if(run_test(process,payload,m) == -11):
+                r = m - 1
+            else:
+                l = m + 1
+            #print("values of l and are are: " +str(l) + " " + str(r))
+        elif(results[0] != -11 and results[1] != -11):
+            #print("values of l and are are: " +str(l) + " " + str(r))
+            #print("failure")
+            return_tuple = (5000 * -1, results[1])
             return return_tuple
+        else:
+            #print("values of l and are are: " +str(l) + " " + str(r))
+            #print(results)
+            #print('badtext')
+            if(results[0] == -11):
+                run = l
+            else:
+                run = r
             break;
 
-    print("completed 5000 runs, now returning back")
+    bad = payload * run
+    
+    #p.send(b'\x04')
+    #print("run is: " + str(run))
+    bad = bad[:-1]
+
+    print("Program terminated: Check 'bad.txt' for output")
+    log_crash(str(bad,'utf-8'))
+    exit(0)
+
     return_tuple = (run * -1, p.returncode)
     return return_tuple
+    
+    
 
 """
 
@@ -107,6 +152,7 @@ def test_payload(process, payload):
 ##
 ##  empty_payload() generates a payload with only delimiters and no data
 ##
+
 def empty_payload(process, data, send_header):
     delimiter = len(data[0])
     if(delimiter < 0):
@@ -117,9 +163,7 @@ def empty_payload(process, data, send_header):
     if(send_header == True):
         payload = generate_header(data)
     
-
     payload += ((b','*(delimiter-1)) + b'\n')
-    payload = payload[:-1]
 
     return test_payload(process,payload)
 
@@ -143,7 +187,7 @@ def zero_payload(process, data, send_header):
 
     payload += string
     
-    payload = payload[:-1]
+    #payload = payload[:-1]
     return test_payload(process,payload)
 
 def max_payload(process, data, send_header):
@@ -162,8 +206,6 @@ def max_payload(process, data, send_header):
         string += (str(random.randrange((2 **63),(2 ** 64))) + ',') * delimiter
         string = string[:-1]
         string += str(b'\n','utf-8')
-
-    string = string[:-1]
 
     payload += bytes(string,'utf-8')
     
@@ -189,8 +231,6 @@ def negative_payload(process, data, send_header):
         string = string[:-1]
         string += str(b'\n','utf-8')
 
-    string = string[:-1]
-
     payload += bytes(string,'utf-8')
 
     print(payload)
@@ -214,7 +254,6 @@ def large_payload(process, data, size, send_header):
     string = string[:-1]
     string += b'\n'
     string *= len(data)
-    string = string[:-1]
 
     if(send_header == True):
         payload = header + string
@@ -238,8 +277,6 @@ def float_payload(process, data, send_header):
         string += (str(random.random()) + ',') * delimiter
         string = string[:-1]
         string += str(b'\n','utf-8')
-
-    string = string[:-1]
 
     payload += bytes(string,'utf-8')
     
@@ -268,28 +305,25 @@ def flip_payload(process, data, send_header):
         string = string[:-1]
         string += str(b'\n','utf-8')
 
-    string = string[:-1]
 
     arr = bytearray(string,'utf-8')
-    arr += b'\n'
     arr *= 5
-    arr = arr[:-1]
     print(string)
     print(arr)
     for i in range(0,len(arr)):
         if chr(arr[i]) == ',' or chr(arr[i]) == '\n':
             continue;
         else:
-            if(random.randint(0,10) == 0):
+            if(random.randint(0,5) == 0):
                 arr[i] ^= random.getrandbits(8)
     print(arr)
-
+    
     if(send_header == True):
         payload = bytearray(header,'utf-8') + arr
         print(payload)
-        return test_payload(process,payload)
+        return test_payload(process,bytes(payload))
     else:
-        return test_payload(process,arr)
+        return test_payload(process,bytes(arr))
 
 def format_payload(process, data, send_header):
     delimiter = len(data[0])
@@ -311,58 +345,92 @@ def format_payload(process, data, send_header):
 
 """
 
-def csv_payload(process,file):
+def csv_fuzzer(process,file):
     data = parse_csv_input(file)
 
     runs = []
 
+    #runs.append(blank_payload(process, data, True))
+    #runs.append(blank_payload(process, data, False))
+
+    runs.append(empty_payload(process,data,True))
     runs.append(empty_payload(process,data,False))
 
+    runs.append(zero_payload(process,data,True))
     runs.append(zero_payload(process,data,False))
 
+    runs.append(negative_payload(process,data,True))
     runs.append(negative_payload(process,data,False))
 
-    runs.append(large_payload(process,data,300,False))
+    runs.append(large_payload(process,data,10,True))
+    runs.append(large_payload(process,data,10,False))
 
+    runs.append(max_payload(process,data,True))
     runs.append(max_payload(process,data,False))
 
+    runs.append(float_payload(process,data,True))
     runs.append(float_payload(process,data,False))
 
+    runs.append(flip_payload(process,data,True))
     runs.append(flip_payload(process,data,False))
 
     print("--------------------------------------------")
     print("runs required for empty payload: " + str(runs[0][0]))
     print("return code for this run was: " + str(runs[0][1]))
-    print("--------------------------------------------")
 
-    print("--------------------------------------------")
-    print("runs required for zero payload: " + str(runs[1][0]))
+    print("\nruns required for empty payload (without header): " + str(runs[1][0]))
     print("return code for this run was: " + str(runs[1][1]))
     print("--------------------------------------------")
-    
+
     print("--------------------------------------------")
-    print("runs required for negative payload: " + str(runs[2][0]))
+    print("runs required for zero payload: " + str(runs[2][0]))
     print("return code for this run was: " + str(runs[2][1]))
-    print("--------------------------------------------")
-    
-    print("--------------------------------------------")
-    print("runs required for large payload: " + str(runs[3][0]))
+
+    print("\nruns required for zero payload (without header): " + str(runs[3][0]))
     print("return code for this run was: " + str(runs[3][1]))
     print("--------------------------------------------")
-
+    
     print("--------------------------------------------")
-    print("runs required for max payload: " + str(runs[4][0]))
+    print("runs required for negative payload: " + str(runs[4][0]))
     print("return code for this run was: " + str(runs[4][1]))
-    print("--------------------------------------------")
 
-    print("--------------------------------------------")
-    print("runs required for float payload: " + str(runs[5][0]))
+    print("\nruns required for negative payload (without header): " + str(runs[5][0]))
     print("return code for this run was: " + str(runs[5][1]))
     print("--------------------------------------------")
-
+    
     print("--------------------------------------------")
-    print("runs required for flip payload: " + str(runs[6][0]))
+    print("runs required for large payload: " + str(runs[6][0]))
     print("return code for this run was: " + str(runs[6][1]))
+
+    print("\nruns required for large payload (without header): " + str(runs[7][0]))
+    print("return code for this run was: " + str(runs[7][1]))
     print("--------------------------------------------")
 
-csv_payload('./csv2','csv2.txt')
+    print("--------------------------------------------")
+    print("runs required for max payload: " + str(runs[8][0]))
+    print("return code for this run was: " + str(runs[8][1]))
+
+    print("\nruns required for max payload: " + str(runs[9][0]))
+    print("return code for this run was: " + str(runs[9][1]))
+    print("--------------------------------------------")
+
+    print("--------------------------------------------")
+    print("runs required for float payload: " + str(runs[10][0]))
+    print("return code for this run was: " + str(runs[10][1]))
+
+    print("\nruns required for float payload (without header): " + str(runs[11][0]))
+    print("return code for this run was: " + str(runs[11][1]))
+    print("--------------------------------------------")
+
+    print("--------------------------------------------")
+    print("runs required for flip payload: " + str(runs[12][0]))
+    print("return code for this run was: " + str(runs[12][1]))
+
+    print("\nruns required for flip payload (without header): " + str(runs[13][0]))
+    print("return code for this run was: " + str(runs[13][1]))
+    print("--------------------------------------------")
+
+
+
+#csv_payload('./csv2','csv2.txt')
+
