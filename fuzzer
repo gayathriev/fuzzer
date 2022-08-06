@@ -2,14 +2,16 @@
 import sys
 import os
 from support.detect import detect
+from support.log_crash import log_crash
 from pwn import *
-# from Harness import Harness
+from Harness import Harness
 from modes.json_fuzzer import json_fuzzer
 from modes.xml_fuzzer import xml_fuzzer
 from modes.csv_fuzzer import csv_fuzzer
+from modes.txt_fuzzer import txt_fuzzer
 
 BINARY_FOLDER = "binaries/"
-SEGFUALT_SIGNAL = -11
+SEGFAULT_CODE = -11
 
 if len(sys.argv) != 3:
     sys.exit("Usage: python3 fuzzer.py [binaryName] [sampleInput]")
@@ -40,6 +42,7 @@ Execute fuzzer for specific data type:
 '''
 
 mode_type = detect(input_file)
+harness = Harness(binary_file)
 # make instance of fuzzer from detected mode
 
 def run_fuzzer():
@@ -57,7 +60,20 @@ def run_fuzzer():
         # calls xml_fuzzer
         xml_fuzzer(binary_file, input_file)
 
+    elif (mode_type == 'txt'):
+        # calls txt_fuzzer
+        payloads = txt_fuzzer(binary_file, input_file)
+        for payload in payloads:
+            exit_status = harness.start_process(payload)
+            if exit_status == SEGFAULT_CODE:
+                log_crash(payload)
+                exit(0)
+
+
     else:
         print("File format not supported yet.")
+        return
+    
+    Harness.no_summary()
 
 run_fuzzer()
