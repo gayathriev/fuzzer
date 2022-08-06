@@ -3,6 +3,8 @@ from pwn import *
 from pwnlib import *
 import subprocess
 import time
+from ptrace import debugger
+from Coverage import Coverage
 from support import detect
 from support.generate_summary import prepare_summary_success
 from support.generate_summary import prepare_summary_fail
@@ -15,6 +17,9 @@ class Harness():
 		self.hangs = 0
 		self.iterations = 0
 		self.start_time = time.time()
+		self.my_coverage = Coverage(binary)
+
+		self.my_coverage.make_break_points()
 
 	def no_summary(self):
 		total_time = time.time()  - self.start_time
@@ -28,10 +33,14 @@ class Harness():
 					stderr = subprocess.PIPE,
 		) as proc:
 
-
+			#self.my_coverage.run(pid)
 			proc.communicate(payload.encode())
 			self.iterations = self.iterations + 1
+			
+			self.my_coverage.run(payload)
 			res = proc.wait(timeout=0.5)
+
+
 			if ((res is None) or res == 3 or (res < 0 and res != -11)):
 				live = proc.poll()
 				if (live is None):
@@ -44,6 +53,8 @@ class Harness():
 			if returncode == -11:
 				''' check this '''
 				total_time = time.time() - self.start_time
+				coverage = self.my_coverage.calculate_coverage()
+				print(coverage)
 				prepare_summary_success(self.hangs, self.aborts, self.iterations, total_time)
 				# print("in here")
 				# p = process(self.binary)
@@ -51,4 +62,3 @@ class Harness():
 				# core = Coredump('./core')
 				# print(core)
 			return returncode
-			#print(proc.returncode)
