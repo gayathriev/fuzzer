@@ -6,10 +6,6 @@ import copy
 import random
 from support.log_crash import log_crash_json
 from Harness import Harness
-<<<<<<< HEAD
-
-=======
->>>>>>> aaa210c91691180ec932083d0ca02812ab08acd5
 
 LOOPS = 6000
 
