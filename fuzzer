@@ -9,6 +9,8 @@ from modes.json_fuzzer import json_fuzzer
 from modes.xml_fuzzer import xml_fuzzer
 from modes.csv_fuzzer import csv_fuzzer
 from modes.txt_fuzzer import txt_fuzzer
+from modes.pdf_fuzzer import pdf_fuzzer
+from modes.jpeg_fuzzer import jpeg_fuzzer
 
 BINARY_FOLDER = "binaries/"
 SEGFAULT_CODE = -11
@@ -71,7 +73,7 @@ def run_fuzzer():
         # calls txt_fuzzer
         payloads = txt_fuzzer(binary_file, input_file)
         for payload in payloads:
-            exit_status = harness.start_process(payload)
+            exit_status = harness.start_process(payload.encode())
             if exit_status == SEGFAULT_CODE:
                 log_crash(payload)
                 exit(0)
@@ -79,6 +81,14 @@ def run_fuzzer():
     elif (mode_type == 'pdf'):
         # calls pdf_fuzzer
         for payload in pdf_fuzzer(binary_file, input_file):
+            exit_status = harness.start_process(payload)
+            if exit_status == SEGFAULT_CODE:
+                log_crash(payload.decode("utf-8"))
+                exit(0)
+
+    elif (mode_type == 'jpeg'):
+        # calls pdf_fuzzer
+        for payload in jpeg_fuzzer(binary_file, input_file):
             exit_status = harness.start_process(payload)
             if exit_status == SEGFAULT_CODE:
                 log_crash(payload.decode("utf-8"))

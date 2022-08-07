@@ -22,12 +22,13 @@ def mutate_type(jpeg):
         type = random.randint(0, 7)
         if type == 0: # Mutate file size/scale
             res[key] = scale_change(jpeg)
-    	if type == 1: # invert file values
+        if type == 1: # invert file values
             res[key] = invert_values(jpeg)
         if type == 2: # insert special bytes
             res[key] = insert_special_bytes(jpeg)
         if type == 3: # Use the 64 bit method
-            res[key] = b64_fuzz(jpeg)
+            pass
+            #res[key] = b64_fuzz(jpeg)
         if type == 4: # flip random bits
             res[key] = bit_flip(jpeg)
         if type == 5: # float
@@ -172,17 +173,18 @@ def test_payload(binary_file, jpeg):
 #################################
 def jpeg_fuzzer(binary_file, input):
     jpeg = read_jpeg(input)
-    test_payload(binary_file, jpeg)
+    #test_payload(binary_file, jpeg)
     print("============== running jpeg fuzzer ==============")
     for i in range(0, LOOPS):
         try:
-            res = mutate(jpeg)
+            #res = mutate(jpeg)
             # print('===', res['len'], '===', len(res['input']))
-            test_payload(binary_file, res)
+            #test_payload(binary_file, res)
             
-            res = mutate_type(jpeg)
+            yield mutate_type(jpeg)
             # print('===', res['len'], '===', len(res['input']))
-            test_payload(binary_file, res)
+            #test_payload(binary_file, res)
         except Exception as e:
-            print(e)
+            pass
+            #print(e)
     
