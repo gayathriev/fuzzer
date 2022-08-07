@@ -39,20 +39,12 @@ def parse_csv_input(path):
 
     data = []
     try:
-        print("this is a list?")
-        print(path)
         with open(path, newline='') as csv_file:
-            print(csv_file)
             csv_reader = csv.reader(csv_file, delimiter=',')
             for row in csv_reader:
-                print(len(row))
                 data.append(row)
     except Exception as e:
-        print("invalid data :(")
-        print(e)
         sys.exit() 
-    print("this is the data extracted:")
-    print(data)
     return data
 
 # Given a processed csv 2d array, will grab the header i.e. the first line and return it.
@@ -287,8 +279,6 @@ def negative_payload(process, data, send_header):
         string += str(b'\n','utf-8')
 
     payload += bytes(string,'utf-8')
-
-    print(payload)
     
     #return test_payload(process,payload)
     return payload
@@ -338,7 +328,6 @@ def float_payload(process, data, send_header):
 
     payload += bytes(string,'utf-8')
     
-    print(payload)
 
     #return test_payload(process,payload)
     return payload
@@ -367,8 +356,6 @@ def flip_payload(process, data, send_header):
 
     arr = bytearray(string,'utf-8')
     arr *= 5
-    print(string)
-    print(arr)
     for i in range(0,len(arr)):
         if chr(arr[i]) == ',' or chr(arr[i]) == '\n':
             continue;
@@ -379,7 +366,6 @@ def flip_payload(process, data, send_header):
     
     if(send_header == True):
         payload = bytearray(header,'utf-8') + arr
-        print(payload)
         #return test_payload(process,bytes(payload))
         return payload
     else:

@@ -22,7 +22,7 @@ def mutate_type(jpeg):
         type = random.randint(0, 7)
         if type == 0: # Mutate file size/scale
             res[key] = scale_change(jpeg)
-    	if type == 1: # invert file values
+        if type == 1: # invert file values
             res[key] = invert_values(jpeg)
         if type == 2: # insert special bytes
             res[key] = insert_special_bytes(jpeg)
@@ -172,7 +172,7 @@ def test_payload(binary_file, jpeg):
 #################################
 def jpeg_fuzzer(binary_file, input):
     jpeg = read_jpeg(input)
-    test_payload(binary_file, jpeg)
+    #test_payload(binary_file, jpeg)
     print("============== running jpeg fuzzer ==============")
     for i in range(0, LOOPS):
         try:
