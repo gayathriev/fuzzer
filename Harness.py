@@ -26,7 +26,7 @@ class Harness():
 		) as proc:
 
 
-			proc.communicate(payload.encode())
+			proc.communicate(payload)
 			res = proc.wait(timeout=0.5)
 			if ((res is None) or res == 3 or (res < 0 and res != -11)):
 				live = proc.poll()

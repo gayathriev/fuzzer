@@ -109,14 +109,17 @@ def format_string(size):
 def test_payload(harness, binary_file, res):
 
     payload = json.dumps(res)
-    exit_status = harness.start_process(payload)
+    exit_status = harness.start_process(payload.encode())
 
     if (exit_status == -11):
         print("Program terminated: Check 'bad.txt' for output")
         log_crash_json(res)
         exit(0)
     elif (exit_status != 0):
+        print("Program terminated: Check 'bad.txt' for output")
         print("status code: ", exit_status)
+        log_crash_json(res)
+        exit(0)
 
 
 #################################
