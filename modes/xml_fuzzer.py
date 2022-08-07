@@ -195,5 +195,3 @@ def xml_fuzzer(binary_file, input):
     for test in generate_input(xml):
         # Returns input string iteratively through yield
         yield test
-        
-        
