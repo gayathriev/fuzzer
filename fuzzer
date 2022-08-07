@@ -57,7 +57,11 @@ def run_fuzzer():
 
     elif (mode_type == 'xml'):
         # calls xml_fuzzer
-        xml_fuzzer(binary_file, input_file)
+        for payload in xml_fuzzer(binary_file, input_file):
+            exit_status = harness.start_process(payload)
+            if exit_status == SEGFAULT_CODE:
+                log_crash(payload.decode("utf-8"))
+                exit(0)
 
     elif (mode_type == 'txt'):
         # calls txt_fuzzer
@@ -70,7 +74,11 @@ def run_fuzzer():
                 
     elif (mode_type == 'pdf'):
         # calls pdf_fuzzer
-        pdf_fuzzer(binary_file, input_file)
+        for payload in pdf_fuzzer(binary_file, input_file):
+            exit_status = harness.start_process(payload)
+            if exit_status == SEGFAULT_CODE:
+                log_crash(payload.decode("utf-8"))
+                exit(0)
 
     else:
         print("File format not supported yet.")
