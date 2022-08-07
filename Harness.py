@@ -1,4 +1,6 @@
 from signal import signal, SIGINT
+from pwn import *
+from pwnlib import *
 import subprocess
 import time
 from support import detect
@@ -11,11 +13,12 @@ class Harness():
 		self.binary = binary
 		self.aborts = 0
 		self.hangs = 0
+		self.iterations = 0
 		self.start_time = time.time()
 
 	def no_summary(self):
-		total_time = time.time()
-		prepare_summary_fail(self.hangs, self.aborts, total_time)
+		total_time = time.time()  - self.start_time
+		prepare_summary_fail(self.aborts, self.hangs, self.iterations, total_time)
 
 	def start_process(self, payload):
 		with subprocess.Popen(
@@ -24,9 +27,8 @@ class Harness():
 					stdout = subprocess.PIPE,
 					stderr = subprocess.PIPE,
 		) as proc:
-
-
-			proc.communicate(payload.encode())
+			proc.communicate(payload)
+			self.iterations = self.iterations + 1
 			res = proc.wait(timeout=0.5)
 			if ((res is None) or res == 3 or (res < 0 and res != -11)):
 				live = proc.poll()
@@ -34,17 +36,19 @@ class Harness():
 					log.critical('Process hangs')
 					self.hangs = self.hangs + 1
 				else:
-					log.critical('Process aborted')
+					#log.critical('Process aborted')
 					self.aborts = self.aborts + 1
 			returncode = proc.returncode
 			if returncode == -11:
 				''' check this '''
 				total_time = time.time() - self.start_time
-				prepare_summary_success(self.hangs, self.aborts, total_time)
+				prepare_summary_success(self.aborts, self.hangs, self.iterations, total_time)
 				# print("in here")
 				# p = process(self.binary)
 				# p.sendline(payload.encode())
 				# core = Coredump('./core')
 				# print(core)
 			return returncode
+
 			#print(proc.returncode)
+

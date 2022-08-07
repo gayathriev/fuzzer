@@ -22,7 +22,6 @@ def read_txt(input_file):
     with open(input_file) as f:
         return f.readlines()
 
-
 def large_negatives(sample_txt, perm_inputs):
     # Generate small numbers '32' for intruction size
     for i in range(0, 32):
@@ -33,16 +32,6 @@ def large_negatives(sample_txt, perm_inputs):
             mutated_copy[line] = y + '\n'
             perm_inputs.append("".join(mutated_copy))
     return perm_inputs
-
-
-def system_words(sample_txt, perm_inputs):
-    for word in SYSTEM_WORDS: 
-        mutated_copy = copy.deepcopy(sample_txt)
-        mutated_copy.append(word)
-        perm_inputs.append("".join(mutated_copy))
-    return perm_inputs
-    
-
 
 def large_positives(sample_txt, perm_inputs):
     # Generate large numbers '32' for intruction size
@@ -79,7 +68,6 @@ def generate_cyclic(sample_txt, perm_inputs):
         perm_inputs.append("".join(mutated_copy))
     
     return perm_inputs
-
 
 # Generate format
 def generate_format_strings(sample_txt, perm_inputs):
@@ -231,5 +219,5 @@ def txt_fuzzer(binary_file, input_file):
         for mask in BIT_FLIP_VALS:
             for mutation in xor_bytes(list_of_bytes, line_no, mask):
                 perm_inputs.append(mutation)
-     
+
     return perm_inputs

@@ -5,37 +5,55 @@ import json
 import copy
 import random
 from support.log_crash import log_crash_json
+from Harness import Harness
 
-LOOPS = 100
+LOOPS = 6000
 
 def read_json(filename):
     f = open(filename)
     return json.load(f)
 
 
-def mutate(json):
-    res = copy.deepcopy(json)
-    key = random.choice([res.keys()])
-    random_numbers = generate_random_numbers(res['len'])
+def mutate(js):
+    res = copy.deepcopy(js)
+    key = random.choice(list(res.keys()))
+
     for key in res.keys():
         if isinstance(res[key], int):
+            random_numbers = generate_random_numbers(res[key])
             res[key] = random.choice(random_numbers)
-        if isinstance(res[key], str):
+        elif isinstance(res[key], str):
             res[key] = mutate_string(res[key])
-        if isinstance(res[key], list):
-            index = random.randint(0, len(res[key]) - 1)
-            if isinstance(res[key][index], int):
-                res[key]  = random.choice(generate_random_numbers(res[key][index]))
-            if isinstance(res[key][index], str):
-                res[key] = mutate_string(res[key][index]).upper()
+        elif isinstance(res[key], list):
+            if len(res[key]) == 0:
+                res[key].append(random.randint(0, 0xfffff))
+            else:
+                index = random.randint(0, (len(res[key]) - 1))
+                if isinstance(res[key][index], int):
+                    res[key] = generate_random_numbers(res[key][index])
+                if isinstance(res[key][index], str):
+                    res[key][index] = mutate_string(res[key][index]).upper()
     return res
 
-def mutate_type(json):
-    res = copy.deepcopy(json)
+def nullify(js):
+    res = copy.deepcopy(js)
+    for key in res.keys():
+        if isinstance(res[key], int):
+            res[key] = 0
+        elif isinstance(res[key], list):
+            res[key] = []
+        elif isinstance(res[key], str):
+            res[key] = ""
+        else:
+            res[key] = None
+    return res
+
+def mutate_type(js):
+    res = copy.deepcopy(js)
     for key in res.keys():
         type = random.randint(0, 7)
         if type == 0: # string
-            res[key] = mutate_string('a'*random.randint(0, sys.maxsize))
+            res[key] = mutate_string('a'*random.randint(0, 0xffff))
         if type == 1: # int
             res[key] = random.randint(-sys.maxsize, sys.maxsize)
         if type == 2: # boolean
@@ -55,13 +73,18 @@ def mutate_type(json):
 def generate_random_numbers(size = 100):
     nums = [0, 1, -1, -sys.maxsize, sys.maxsize, size, -size]
     for i in range(LOOPS):
-        nums.append(random.randint(-size, size + 1000))
+        try:
+            nums.append(random.randint((size - 1000), (size + 1000)))
+        except Exception as e:
+            print(size)
+            print(e)
     return nums
+
 ################################
 ### STRING STUFF
 ################################
 def mutate_string(string):
-    size = random.randint(0, len(string) + 1000)
+    size = random.randint(0, (len(string) + 1000))
     payload = ''
     #payload = format_string(size)
     payload = get_random_string(size)
@@ -82,44 +105,47 @@ def format_string(size):
 #################################
 ###     TEST
 #################################
-def test_payload(binary_file, res):
-    p = process('./' + binary_file)
-    context.log_level = 'error'
+def test_payload(harness, binary_file, res):
 
-    p.sendline(json.dumps(res).encode())
-    p.proc.stdin.close()
+    payload = json.dumps(res)
+    exit_status = harness.start_process(payload.encode())
 
-    exit_status = None
-    while exit_status == None:
-        p.wait()
-        exit_status = p.returncode
-    #print("exit status:", exit_status, "-- segfault" if exit_status == -11 else 'REEEEEE')
     if (exit_status == -11):
         print("Program terminated: Check 'bad.txt' for output")
         log_crash_json(res)
         exit(0)
+    elif (exit_status != 0):
+        print("Program terminated: Check 'bad.txt' for output")
+        print("status code: ", exit_status)
+        log_crash_json(res)
+        exit(0)
 
-    mess = p.recvline(timeout = 0.1)
-    # print('len: ', res['len'], 'input len: ', len(res['input']), mess)
-    p.close()
 
 #################################
 ###     MAIN STUFF
 #################################
-def json_fuzzer(binary_file, input, loops=100):
-    json = read_json(input)
-    test_payload(binary_file, json)
+def json_fuzzer(harness, binary_file, input, loops=LOOPS):
+    js = read_json(input)
     print("============== running json fuzzer ==============")
+    test_payload(harness, binary_file, js)
+    res = nullify(js)
+    test_payload(harness, binary_file, res)
+    entropy = res
     for i in range(0, LOOPS):
         try:
-            res = mutate(json)
-            # print('===', res['len'], '===', len(res['input']))
-            test_payload(binary_file, res)
+            res = mutate(js)
+            test_payload(harness, binary_file, res)
             
-            res = mutate_type(json)
-            # print('===', res['len'], '===', len(res['input']))
-            test_payload(binary_file, res)
+            res = mutate_type(js)
+            test_payload(harness, binary_file, res)
+
+
+            entropy = mutate(entropy)
+            test_payload(harness, binary_file, entropy)
+
+            entropy = mutate_type(entropy)
+            test_payload(harness, binary_file, entropy)
+                   
         except Exception as e:
-            print(e)
-    
+            print("exception", e)
 
