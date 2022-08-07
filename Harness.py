@@ -31,8 +31,6 @@ class Harness():
 
 			proc.communicate(payload)
 
-
-
 			self.iterations = self.iterations + 1
 			res = proc.wait(timeout=0.5)
 			if ((res is None) or res == 3 or (res < 0 and res != -11)):
@@ -54,4 +52,8 @@ class Harness():
 				# core = Coredump('./core')
 				# print(core)
 			return returncode
+<<<<<<< HEAD
 			#print(proc.returncode)
+=======
+			#print(proc.returncode)
+>>>>>>> g3/tests
