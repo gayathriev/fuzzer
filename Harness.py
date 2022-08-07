@@ -28,8 +28,10 @@ class Harness():
 					stderr = subprocess.PIPE,
 		) as proc:
 
-
-			proc.communicate(payload)
+			if(isinstance(payload,bytes) or isinstance(payload,bytearray)):
+				proc.communicate(payload)
+			else:
+				proc.communicate(payload.encode())
 
 			self.iterations = self.iterations + 1
 			res = proc.wait(timeout=0.5)
