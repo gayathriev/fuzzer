@@ -6,7 +6,7 @@ import copy
 import random
 from support.log_crash import log_crash_json
 from Harness import Harness
-import coverage
+
 
 LOOPS = 6000
 
