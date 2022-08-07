@@ -52,8 +52,6 @@ class Harness():
 				# core = Coredump('./core')
 				# print(core)
 			return returncode
-<<<<<<< HEAD
+
 			#print(proc.returncode)
-=======
-			#print(proc.returncode)
->>>>>>> g3/tests
+
