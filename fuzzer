@@ -49,7 +49,7 @@ def run_fuzzer():
     """ start the fuzzing campaign """
     if (mode_type == 'json'):
         # calls json_fuzzer
-        json_fuzzer(binary_file, input_file)
+        json_fuzzer(harness, binary_file, input_file)
 
     elif (mode_type == 'csv'):
         # calls csv_fuzzer
