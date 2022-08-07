@@ -73,7 +73,7 @@ def run_fuzzer():
         # calls txt_fuzzer
         payloads = txt_fuzzer(binary_file, input_file)
         for payload in payloads:
-            exit_status = harness.start_process(payload)
+            exit_status = harness.start_process(payload.encode())
             if exit_status == SEGFAULT_CODE:
                 log_crash(payload)
                 exit(0)

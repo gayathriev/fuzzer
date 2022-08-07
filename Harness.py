@@ -33,7 +33,7 @@ class Harness():
 			if ((res is None) or res == 3 or (res < 0 and res != -11)):
 				live = proc.poll()
 				if (live is None):
-					log.critical('Process hangs')
+					#log.critical('Process hangs')
 					self.hangs = self.hangs + 1
 				else:
 					#log.critical('Process aborted')
