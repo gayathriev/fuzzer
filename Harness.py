@@ -28,12 +28,19 @@ class Harness():
 					stderr = subprocess.PIPE,
 		) as proc:
 
-			proc.communicate(payload)
+			hang = False
+
+			try:
+				proc.communicate(payload, timeout=0.1)
+			except subprocess.TimeoutExpired:
+				proc.kill()
+				hang = True
 			self.iterations = self.iterations + 1
 			res = proc.wait(timeout=0.5)
 			if ((res is None) or res == 3 or (res < 0 and res != -11)):
 				live = proc.poll()
-				if (live is None):
+
+				if (hang):
 					#log.critical('Process hangs')
 					self.hangs = self.hangs + 1
 				else:
