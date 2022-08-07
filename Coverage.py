@@ -22,41 +22,12 @@ class Coverage():
             if(key[:1] != "." and key[:1] != "_" and key[:4] != "got." and key[:4] != "plt." and ("GLIBC" not in key) and key != "deregister_tm_clones" and key != "register_tm_clones" and key !=""):
                 functions[key] = symbols[key]
         
-        for func in filtered_functions:
+        for func in functions:
             add = hex(functions[func])
             self.break_points.append(add)
 
 
     def run(self, data):
-
-        # DFILE = "mutated.txt"
-        # try:
-        #     os.mkfifo(DFILE, mode=0o777)
-        # except FileExistsError:
-        #     pass
-        # input_subprocess = os.open(DFILE, os.O_RDONLY | os.O_NONBLOCK)
-
-        # comm = os.open(DFILE, os.O_WRONLY)
-        # process = subprocess.Popen(
-        #     [self.binary],
-        #     # shell=False,
-        #     stdout=open(os.devnull,'wb'),
-        #     stdin=input_subprocess,
-        #     stderr=PIPE,
-        #     close_fds=True,
-        #     preexec_fn = os.setsid
-        # )
-
-        # os.close(input_subprocess)
-        # try:
-        #     os.write(comm, bytes(data,'utf-8'))
-        # except:
-        #     os.close(comm)
-        #     os.unlink(DFILE)
-        #     return
-
-        # os.close(comm)
-        # os.unlink(DFILE)
 
         proc = subprocess.Popen(
 					self.binary,
@@ -66,7 +37,8 @@ class Coverage():
 		)
 
         
-        proc.communicate(data.encode())
+        #proc.communicate(data.encode())
+        count = 0
         pid = proc.pid
         ptracer = debugger.PtraceDebugger()
         
@@ -75,6 +47,7 @@ class Coverage():
             if self.break_points:
                 for add in self.break_points:
                     trace_process.createBreakpoint(int(add,16), size = 4)
+                    # print(add)
             while True:
                 trace_process.cont()
                 trace_process_event = ptracer.waitProcessEvent()
@@ -84,6 +57,10 @@ class Coverage():
                     self.visited_instr.add(instrPtr - 1)
                     trace_process.setInstrPointer(instrPtr-1)
                     brkPts = trace_process.findBreakpoint(instrPtr-1).desinstall()
+                    if (count == 0):
+                        proc.communicate(data.encode())
+                        count = 1
+
                 elif sig_num == signal.SIGINT or sig_num == signal.SIGSEGV or sig_num == signal.SIGABRT or sig_num == signal.SIGFPE:
                     trace_process.detach()
                     break
