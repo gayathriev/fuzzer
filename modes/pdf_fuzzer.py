@@ -102,6 +102,7 @@ def generate_input(reader):
 ###     MAIN STUFF
 #################################
 def pdf_fuzzer(binary_file, input):
+    print("============== running pdf fuzzer ==============")
     pdf = read_pdf(input)
     reader = pdf[0]
     file = pdf[1]

@@ -162,7 +162,7 @@ def xor_string(sample_txt, place, perm_inputs):
 
 
 def txt_fuzzer(binary_file, input_file):
-
+    print("============== running plaintext fuzzer ==============")
     sample_txt = read_txt(input_file)
     perm_inputs = []
 

@@ -191,6 +191,7 @@ def generate_input(xml):
 ###     MAIN STUFF
 #################################
 def xml_fuzzer(binary_file, input):
+    print("============== running xml fuzzer ==============")
     xml = read_xml(input)
     for test in generate_input(xml):
         # Returns input string iteratively through yield

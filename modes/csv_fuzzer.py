@@ -294,7 +294,7 @@ def flip_payload(process, data, send_header):
 
 def csv_fuzzer(process,file):
     data = parse_csv_input(file)
-
+    print("============== running csv fuzzer ==============")
     payloads = []
 
     payloads.append(empty_payload(process,data,True))

@@ -19,17 +19,7 @@ if len(sys.argv) != 3:
     sys.exit("Usage: ./fuzzer [binaryName] [sampleInput]")
 
 binary_file = BINARY_FOLDER + sys.argv[1]
-# print("Binary: " + binary_file)
 input_file = BINARY_FOLDER + sys.argv[2]
-# print("Input File: " + input_file)
-
-# binary = BINARY_FOLDER + binary_file
-# if not (os.path.isfile(binary)):
-#     sys.exit("Binary does not exist")
-
-# sample = BINARY_FOLDER + input_file
-# if not (os.path.isfile(sample)):
-#     sys.exit("Sample input does not exist")
 
 '''
 Execute fuzzer for specific data type:
