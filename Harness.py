@@ -27,22 +27,33 @@ class Harness():
 					stdout = subprocess.PIPE,
 					stderr = subprocess.PIPE,
 		) as proc:
-<<<<<<< HEAD
+
+			hang = False
 
 			if(isinstance(payload,bytes) or isinstance(payload,bytearray)):
-				proc.communicate(payload)
-			else:
-				proc.communicate(payload.encode())
+				try:
+					proc.communicate(payload,timeout=0.1)
+				except subprocess.TimeoutExpired:
+					print("oof ouchies :(")
+					proc.kill()
+					hang = True;
 
-=======
-			proc.communicate(payload)
->>>>>>> 45495f71154f27f57c8b496914285e62a52e37a7
+			else:
+				try:
+					proc.communicate(payload.encode(),timeout=0.1)
+				except subprocess.TimeoutExpired:
+					print("oof ouchies :(")
+					proc.kill()
+					hang = True;
+
+				    
+
 			self.iterations = self.iterations + 1
 			res = proc.wait(timeout=0.5)
 			if ((res is None) or res == 3 or (res < 0 and res != -11)):
 				live = proc.poll()
-				if (live is None):
-					log.critical('Process hangs')
+				if (hang):
+					#log.critical('Process hangs')
 					self.hangs = self.hangs + 1
 				else:
 					#log.critical('Process aborted')
