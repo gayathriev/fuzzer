@@ -1,4 +1,4 @@
-import magic, csv, json, xml, string
+import magic, csv, json, xml, string, PyPDF2
 import xml.etree.ElementTree as ET
 
 '''
@@ -32,6 +32,14 @@ def detect(file):
     except:
         pass
     
+    # Try for PDF
+    try:
+        pdfFileObj = open(file, 'rb')
+        pdfReader = PyPDF2.PdfFileReader(pdfFileObj)
+        return "pdf"
+    except:
+        pass
+
     # Try for CSV
     try:
         with open(file, newline='') as csvfile:
@@ -40,13 +48,15 @@ def detect(file):
                 pass
             else:
                 dialect = csv.Sniffer().sniff(start)
-                return "csv"
+                name = file.split('/')[-1]
+                if name.startswith('csv') or name.endswith('.csv'):
+                    return "csv"
+                return "txt"
     except csv.Error:
         pass
 
-    
     # Else return plain
-    return "plain"
+    return "txt"
 
 if __name__ == '__main__':
     print(detect('../tests/inputs/csv1.txt'))
