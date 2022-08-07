@@ -4,22 +4,8 @@ from enum import Enum
 import random
 import math
 from support.log_crash import log_crash
-class Payload(Enum):
-    EMPTY = 1
-    INVALID = 2
-    OVERFLOW_LINE = 3
-    OVERFLOW_ENTRY = 4
-    DELIMITER = 5
-    FORMAT_STRING = 6
-    BYTE_FLIP = 7
-    NUM_ZERO = 8
-    NUM_NEGATIVE = 9
-    NUM_LARGE = 10
-    NUM_FLOAT = 11 
-
 
 """
-    
     Process & Payload Handlers
     ----------------------------------
     These processes will parse our sample payload, handle communication to the process to test, and test our payloads.
@@ -150,7 +136,9 @@ def format_payload(process, data, send_header):
     
     return payload
 
-
+##
+##  max_payload() generates a payload with numbers approaching INT_MAX
+##
 def max_payload(process, data, send_header):
     delimiter = len(data[0])
     if(delimiter < 0):
@@ -244,7 +232,9 @@ def large_payload(process, data, size, send_header):
         return payload
     else:
         return string
-
+##
+##  float_payload() generates a payload with random floating point numbers
+##
 def float_payload(process, data, send_header):
     delimiter = len(data[0])
     if(delimiter < 0):
@@ -268,7 +258,9 @@ def float_payload(process, data, send_header):
 
     return payload
 
-
+##
+##  flip() generates a payload with random bits of the payload flipped
+##
 def flip_payload(process, data, send_header):
     delimiter = len(data[0])
     if(delimiter < 0):
