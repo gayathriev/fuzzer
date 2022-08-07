@@ -5,6 +5,7 @@ import random
 import copy
 import xml
 import xml.etree.ElementTree as ET
+from xml.etree.ElementTree import Element, SubElement, tostring
 import re
 from support.log_crash import log_crash
 
@@ -27,6 +28,9 @@ def rand_str():
 def tree_to_string(tree):
     return ET.tostring(tree)
 
+def tree_to_bytes(tree):
+    return bytes(tree_to_string(tree), 'utf-8')
+
 def read_xml(filename):
     f = open(filename)
     root = ET.parse(f).getroot()
@@ -39,21 +43,21 @@ def span_child(child, xml):
         root.append(copy.deepcopy(child))
     return root
 
-def breed_child(child, parent, xml):
+def nest(xml):
     root = copy.deepcopy(xml)
-    parent = root.find(parent.tag)
-    child = root.find(child.tag)
-    _root = copy.deepcopy(child)
+    curr = root
+    text_size = [1, 100, 1000, 10000, 100000, 1000000]
+    for count in text_size:
+        for i in range(100):
+            curr = breed_child(curr, count)
+        yield root
 
-    for i in range(0, random.randint(50,100)):
-        _child = copy.deepcopy(_root)
-        _child.tag = str(random.randint(0,10000))
-        _root.append(_child)
-        _root = _root.find(_child.tag)
-
-    parent.append(_root)
-
-    return root
+def breed_child(root, count):
+    tag = 'a'
+    child = ET.SubElement(root, tag)
+    child.text = 'A' * count
+    child.tail = '\n'
+    return child
 
 # Sets attribute value in tag to input
 def set_tag(xml, tag, attr, input):
@@ -118,16 +122,17 @@ def arithmetic(xml):
             new_xml = new_xml.replace(num, target)
             yield ET.fromstring(new_xml)
 
-# Byte Flips: Flips bytes at a 5% chance for every byte in the XML payload, looped 100 times
+# Byte Flips: Flips bytes at a 5% chance for every byte in the XML payload, looped 30 times
 def byte_flips(xml):
     xml_str = tree_to_string(xml).decode('utf-8')
     xml_bytes = bytearray(xml_str, 'utf-8')
-    for i in range(0, 100):
-        for x in range(0, len(xml_bytes)):
-            if random.randint(0, 20) == 1:
-                xml_bytes[x] ^= random.getrandbits(7)
-            res = xml_bytes.decode('ascii')
-            yield ET.fromstring(res)
+    
+    for x in range(0, len(xml_bytes)):
+        copy = xml_bytes.copy()
+        if random.randint(0, 20) == 1:
+            copy[x] ^= random.getrandbits(7)
+        res = bytes(copy)
+        yield res
 
 #################################
 ###     TEST
@@ -155,7 +160,6 @@ def generate_input(xml):
 
     # Original input
     input = tree_to_string(xml)
-    print(input)
     yield input
     
     # known int + overflow + fmt str injection
@@ -168,24 +172,21 @@ def generate_input(xml):
         mutated = span_child(child, xml)
         input = tree_to_string(mutated)
         yield input
-
-    # Recursively add random child to itself rand times
-    for parent in xml:
-        for child in xml:
-            mutated = breed_child(child, parent, xml)
-            input = tree_to_string(mutated)
-            yield input
-
+    
+    # Recursively add child to itself 100 times
+    for x in nest(xml):
+        input = tree_to_string(x)
+        yield input
+    
     # Arithmetic
     for x in arithmetic(xml):
         input = tree_to_string(x)
         yield input
-    
+
     # Byte Flips
     for x in byte_flips(xml):
-        input = tree_to_string(x)
-        yield input
-
+        yield x
+    
 #################################
 ###     MAIN STUFF
 #################################

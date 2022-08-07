@@ -14,7 +14,7 @@ BINARY_FOLDER = "binaries/"
 SEGFAULT_CODE = -11
 
 if len(sys.argv) != 3:
-    sys.exit("Usage: python3 fuzzer.py [binaryName] [sampleInput]")
+    sys.exit("Usage: ./fuzzer [binaryName] [sampleInput]")
 
 binary_file = BINARY_FOLDER + sys.argv[1]
 # print("Binary: " + binary_file)
@@ -48,7 +48,7 @@ def run_fuzzer():
     """ start the fuzzing campaign """
     if (mode_type == 'json'):
         # calls json_fuzzer
-        json_fuzzer(binary_file, input_file)
+        json_fuzzer(harness, binary_file, input_file)
 
     elif (mode_type == 'csv'):
         # calls csv_fuzzer
@@ -61,7 +61,11 @@ def run_fuzzer():
 
     elif (mode_type == 'xml'):
         # calls xml_fuzzer
-        xml_fuzzer(binary_file, input_file)
+        for payload in xml_fuzzer(binary_file, input_file):
+            exit_status = harness.start_process(payload)
+            if exit_status == SEGFAULT_CODE:
+                log_crash(payload.decode("utf-8"))
+                exit(0)
 
     elif (mode_type == 'txt'):
         # calls txt_fuzzer
@@ -71,7 +75,14 @@ def run_fuzzer():
             if exit_status == SEGFAULT_CODE:
                 log_crash(payload)
                 exit(0)
-
+                
+    elif (mode_type == 'pdf'):
+        # calls pdf_fuzzer
+        for payload in pdf_fuzzer(binary_file, input_file):
+            exit_status = harness.start_process(payload)
+            if exit_status == SEGFAULT_CODE:
+                log_crash(payload.decode("utf-8"))
+                exit(0)
 
     else:
         print("File format not supported yet.")
