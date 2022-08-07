@@ -20,12 +20,13 @@ def read_txt(input_file):
         return f.readlines()
 
 
+# Yield large negatives
 def large_negatives():
     # Generate small numbers '32' for intruction size
     for i in range(0, 32):
         yield str(-(2 ** i))
 
-
+# Yield large positives
 def large_positives():
     # Generate large numbers '32' for intruction size
     for i in range(0, 32):
@@ -56,7 +57,42 @@ def cyclic_gen():
     yield cyclic(4000).decode()
     yield cyclic(10000).decode()
 
+
+def known_ints():
+    yield '255'
+    yield '4294967295'
+    yield '2147483648'
+    yield '18446744073709551615'
+    yield str(0)
+    yield str(-INT_MAX)
+    yield str(-BYTE_8_MAX)
+    yield str(-CHAR_MAX)
+    yield str(INT_MAX + 1)
+    yield str(CHAR_MAX + 1)
+
+
+def bit_flip_values():
+    yield 1
+    yield 2
+    yield 4
+    yield 8
+    yield 16
+    yield 32
+    yield 64
+    yield 128
+    yield 255
+
+# def keywords():
+#     yield f'{data}/bin/sh{arg}'
+# 	yield f'{data}/bin/bash{arg}'
+# 	yield f'{data}/bin/zsh{arg}'
+# 	yield f'{data}fork{arg}'
+# 	yield f'{data}exec{arg}'
+# 	yield f'{data}exit{arg}'
+
+
 # keywords
+
 
 def pack_stream(bytes):
 	""" pack csv list into string """
@@ -197,6 +233,11 @@ def txt_fuzzer(binary_file, input_file):
     #         for mutation in xor_bytes(stream, line, num):
     #             perm_inputs.append(mutation)
 
+
+
+    # append control charcaters
+    # search for string and change
+
     # lines_list = list("".join(copy.deepcopy(sample_txt)).encode())
     # for num in range(len(lines_list)):
     #     # byte by byte
@@ -209,5 +250,4 @@ def txt_fuzzer(binary_file, input_file):
         #     for mutation in xor_bytes(stream, line, num):
         #         perm_inputs.append(mutation)
 
-    
     return perm_inputs

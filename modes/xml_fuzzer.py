@@ -5,12 +5,14 @@ import random
 import copy
 import xml
 import xml.etree.ElementTree as ET
+from xml.etree.ElementTree import Element, SubElement, tostring
+import re
 from support.log_crash import log_crash
 
 from pwn import *
 
 MAX_BUF = 0x500
-FUZZ_INPUTS = ['null', '*', '%', '@', '$', '-', '+', ';', ':', 'true', 'false', '0', '%%', '%p', '%d', '%c', '%u', '%x', '%s', '%n', ' ']
+FUZZ_INPUTS = ['null', '%s','*', '%', '@', '$', '-', '+', ';', ':', 'true', 'false', '0', '%%', '%n', ' ']
 KNOWN_INTS = [0, 1, 9, 256, 1024, 0x7F, 0xFF, 0x7FFF, 0xFFFF, 0x80, 0x8000, MAX_BUF]
 
 # Create random string from 0x20 to 0x7E from ascii table
@@ -26,6 +28,9 @@ def rand_str():
 def tree_to_string(tree):
     return ET.tostring(tree)
 
+def tree_to_bytes(tree):
+    return bytes(tree_to_string(tree), 'utf-8')
+
 def read_xml(filename):
     f = open(filename)
     root = ET.parse(f).getroot()
@@ -38,24 +43,21 @@ def span_child(child, xml):
         root.append(copy.deepcopy(child))
     return root
 
-def breed_child(child, parent, xml):
+def nest(xml):
     root = copy.deepcopy(xml)
-    parent = root.find(parent.tag)
-    child = root.find(child.tag)
-    _root = copy.deepcopy(child)
+    curr = root
+    text_size = [1, 100, 1000, 10000, 100000, 1000000]
+    for count in text_size:
+        for i in range(100):
+            curr = breed_child(curr, count)
+        yield root
 
-    for i in range(0, random.randint(50,100)):
-        _child = copy.deepcopy(_root)
-        _child.tag = str(random.randint(0,10000))
-        _root.append(_child)
-        _root = _root.find(_child.tag)
-
-    parent.append(_root)
-
-    return root
-
-#def bit_flip(byte):
-#    return byte ^ random.choice([1, 2, 4, 8, 16, 32, 64, 128])
+def breed_child(root, count):
+    tag = 'a'
+    child = ET.SubElement(root, tag)
+    child.text = 'A' * count
+    child.tail = '\n'
+    return child
 
 # Sets attribute value in tag to input
 def set_tag(xml, tag, attr, input):
@@ -107,6 +109,31 @@ def fuzz_by_injection(xml):
     for res in inject(xml, rand_str()):
         yield res
 
+# Arithmetic: Increment all integer values from -35 to 35
+def arithmetic(xml):
+    xml_str = tree_to_string(xml).decode('utf-8')
+
+    res = re.findall('[0-9]+', xml_str)
+    
+    for i in range(-35, 35):
+        new_xml = xml_str
+        for num in res:
+            target = str(int(num) + i)
+            new_xml = new_xml.replace(num, target)
+            yield ET.fromstring(new_xml)
+
+# Byte Flips: Flips bytes at a 5% chance for every byte in the XML payload, looped 30 times
+def byte_flips(xml):
+    xml_str = tree_to_string(xml).decode('utf-8')
+    xml_bytes = bytearray(xml_str, 'utf-8')
+    
+    for x in range(0, len(xml_bytes)):
+        copy = xml_bytes.copy()
+        if random.randint(0, 20) == 1:
+            copy[x] ^= random.getrandbits(7)
+        res = bytes(copy)
+        yield res
+
 #################################
 ###     TEST
 #################################
@@ -120,75 +147,53 @@ def test_payload(binary_file, xml):
     while exit_status == None:
         p.wait()
         exit_status = p.returncode
-    # print("exit status:", exit_status, "-- segfault" if exit_status == -11 else 'REEEEEE')
     if (exit_status == -11):
         print("Program terminated: Check 'bad.txt' for output")
         log_crash(payload.decode("utf-8"))
         exit(0)
     
-    mess = p.recvlines(2, timeout=0.2)
     p.close()
-    print(mess)
 
 def generate_input(xml):
     # Empty input
-    print("empty")
-    print("----------------------")
     yield b''
 
     # Original input
-    print("original")
-    print("----------------------")
     input = tree_to_string(xml)
     yield input
-
-    # Add child to parent rand times
-    print("breadthwise add")
-    print("----------------------")
-    for child in xml:
-        mutated = span_child(child, xml)
-        input = tree_to_string(mutated)
-        yield input
-
-    # Recursively add random child to itself rand times
-    print("depthwise add")
-    print("----------------------")
-    for parent in xml:
-        for child in xml:
-            mutated = breed_child(child, parent, xml)
-            input = tree_to_string(mutated)
-            yield input
-
-    print("known int + overflow + fmt str injection")
-    print("----------------------") 
+    
+    # known int + overflow + fmt str injection
     for x in fuzz_by_injection(xml):
         input = tree_to_string(x)
         yield input
 
-    # Bit flips
-
-    # Byte flips
-
-    # Repeated parts
-
-    # Keyword extraction
-
+    # Add child to parent rand times
+    for child in xml:
+        mutated = span_child(child, xml)
+        input = tree_to_string(mutated)
+        yield input
+    
+    # Recursively add child to itself 100 times
+    for x in nest(xml):
+        input = tree_to_string(x)
+        yield input
+    
     # Arithmetic
+    for x in arithmetic(xml):
+        input = tree_to_string(x)
+        yield input
 
-    # Coverage based mutations
-
-    # Bit shift
-
-    # Node Shuffle
-
+    # Byte Flips
+    for x in byte_flips(xml):
+        yield x
+    
 #################################
 ###     MAIN STUFF
 #################################
 def xml_fuzzer(binary_file, input):
     xml = read_xml(input)
     for test in generate_input(xml):
-        try:
-            test_payload(binary_file, test)
-        except Exception as e:
-            print(e)
+        # Returns input string iteratively through yield
+        yield test
+        
         

@@ -9,12 +9,13 @@ from modes.json_fuzzer import json_fuzzer
 from modes.xml_fuzzer import xml_fuzzer
 from modes.csv_fuzzer import csv_fuzzer
 from modes.txt_fuzzer import txt_fuzzer
+from modes.pdf_fuzzer import pdf_fuzzer
 
 BINARY_FOLDER = "binaries/"
 SEGFAULT_CODE = -11
 
 if len(sys.argv) != 3:
-    sys.exit("Usage: python3 fuzzer.py [binaryName] [sampleInput]")
+    sys.exit("Usage: ./fuzzer [binaryName] [sampleInput]")
 
 binary_file = BINARY_FOLDER + sys.argv[1]
 # print("Binary: " + binary_file)
@@ -30,15 +31,14 @@ input_file = BINARY_FOLDER + sys.argv[2]
 #     sys.exit("Sample input does not exist")
 
 '''
-Test case - determine data type
 Execute fuzzer for specific data type:
- 1. Plaintext (multiline) @TODO
+ 1. Plaintext (multiline) 
  2. JSON
  3. XML
  4. CSV
- 5. JPEG @TODO
+ 5. JPEG 
  6. ELF  @TODO
- 7. PDF  @TODO
+ 7. PDF
 '''
 
 mode_type = detect(input_file)
@@ -55,10 +55,13 @@ def run_fuzzer():
         # calls csv_fuzzer
         csv_fuzzer(binary_file, input_file)
 
-
     elif (mode_type == 'xml'):
         # calls xml_fuzzer
-        xml_fuzzer(binary_file, input_file)
+        for payload in xml_fuzzer(binary_file, input_file):
+            exit_status = harness.start_process(payload)
+            if exit_status == SEGFAULT_CODE:
+                log_crash(payload.decode("utf-8"))
+                exit(0)
 
     elif (mode_type == 'txt'):
         # calls txt_fuzzer
@@ -68,12 +71,19 @@ def run_fuzzer():
             if exit_status == SEGFAULT_CODE:
                 log_crash(payload)
                 exit(0)
-
+                
+    elif (mode_type == 'pdf'):
+        # calls pdf_fuzzer
+        for payload in pdf_fuzzer(binary_file, input_file):
+            exit_status = harness.start_process(payload)
+            if exit_status == SEGFAULT_CODE:
+                log_crash(payload.decode("utf-8"))
+                exit(0)
 
     else:
         print("File format not supported yet.")
         return
     
-    Harness.no_summary()
+    harness.no_summary()
 
 run_fuzzer()
